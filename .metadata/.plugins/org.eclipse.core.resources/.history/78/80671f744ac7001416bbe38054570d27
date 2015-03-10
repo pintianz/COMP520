@@ -1,0 +1,92 @@
+package miniJava.ContextualAnalyzer;
+
+import java.util.HashMap;
+import java.util.Map.Entry;
+import miniJava.AbstractSyntaxTrees.*;
+
+public class IdentificationTable {
+
+  private int level;
+  private HashMap<String, IdEntry>map;
+
+  public IdentificationTable () {
+    level = 0;
+    map = new HashMap<String, IdEntry>();
+  }
+
+  // Opens a new level in the identification table, 1 higher than the
+  // current topmost level.
+
+  public void openScope () {
+    level ++;
+  }
+
+  // Closes the topmost level in the identification table, discarding
+  // all entries belonging to that level.
+
+  public void closeScope () {
+	  	String spelling;
+		IdEntry entry;
+		
+		for(Entry<String, IdEntry> e: map.entrySet()){
+			spelling = e.getKey();
+			entry = e.getValue();
+	    	if(entry.level == this.level){
+	    	    entry = entry.previous;
+	    	    map.remove(spelling);
+	    	    if(entry != null){
+	    	    	map.put(spelling, entry);
+	    	    }
+	    	}
+		}
+		
+		this.level--;
+  }
+  
+  public boolean exist (String id) {
+	  return map.containsKey(id);
+  }
+  
+  
+  // Makes a new entry in the identification table for the given identifier
+  // and attribute. The new entry belongs to the current level.
+  // duplicated is set to to true iff there is already an entry for the
+  // same identifier at the current level.
+
+  public void enter (String id, Declaration attr) {
+	  IdEntry entry;
+	  if(exist(id)){
+		  
+	  } else{
+		  entry = new IdEntry()
+	  }
+  }
+
+  // Finds an entry for the given identifier in the identification table,
+  // if any. If there are several entries for that identifier, finds the
+  // entry at the highest level, in accordance with the scope rules.
+  // Returns null iff no entry is found.
+  // otherwise returns the attribute field of the entry found.
+
+  public Declaration retrieve (String id) {
+
+    IdEntry entry;
+    Declaration attr = null;
+    boolean present = false, searching = true;
+
+    entry = this.latest;
+    while (searching) {
+      if (entry == null)
+        searching = false;
+      else if (entry.id.equals(id)) {
+        present = true;
+        searching = false;
+        attr = entry.attr;
+      } else
+        entry = entry.previous;
+    }
+
+    return attr;
+  }
+
+}

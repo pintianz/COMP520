@@ -7,6 +7,6 @@
 <listEntry value="1"/>
 </listAttribute>
 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="miniJava.Compiler"/>
-<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="tests/pa2_tests/pass214.java"/>
+<stringAttribute key="org.eclipse.jdt.launching.PROGRAM_ARGUMENTS" value="test.java&#13;&#10;tests/pa2_tests/pass123.java"/>
 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="miniJava"/>
 </launchConfiguration>

@@ -13,8 +13,9 @@ public abstract class Declaration extends AST {
 		super(posn);
 		this.name = name;
 		this.type = type;
+		duplicated = false;
 	}
-	
+	public boolean duplicated;
 	public String name;
 	public Type type;
 }

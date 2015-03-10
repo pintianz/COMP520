@@ -1,0 +1,128 @@
+package miniJava.ContextualAnalyzer;
+
+import java.util.HashMap;
+import java.util.Map.Entry;
+
+import miniJava.ErrorReporter;
+import miniJava.ContextualAnalyzer.IdEntry;
+import miniJava.AbstractSyntaxTrees.*;
+
+public class IdentificationTable {
+
+  private int level;
+  private HashMap<String, IdEntry>map;
+  private ErrorReporter errorReporter;
+
+  public IdentificationTable (ErrorReporter errorReporter) {
+    level = 1;
+    map = new HashMap<String, IdEntry>();
+    this.errorReporter = errorReporter;
+  }
+
+  
+  private void addEntry(String id, IdEntry entry){
+	  map.put(id, entry);
+  }
+  private void removeEntry(String id){
+	  map.remove(id);
+  }
+  private IdEntry getEntry(String id){
+	  return map.get(id);
+  }
+  // Opens a new level in the identification table, 1 higher than the
+  // current topmost level.
+
+  public void openScope () {
+    level ++;
+  }
+
+  // Closes the topmost level in the identification table, discarding
+  // all entries belonging to that level.
+
+  public void closeScope () {
+	  	String id;
+		IdEntry entry;
+		
+		for(Entry<String, IdEntry> e: map.entrySet()){
+			id = e.getKey();
+			entry = e.getValue();
+	    	while(entry != null && entry.level == this.level){
+	    	    entry = entry.previous;
+	    	    removeEntry(id);
+	    	    if(entry != null){
+	    	    	addEntry(id, entry);
+	    	    }
+	    	}
+		}
+		
+		this.level--;
+  }
+  
+  public boolean exist (String id) {
+	  return map.containsKey(id);
+  }
+  
+  
+  // Makes a new entry in the identification table for the given identifier
+  // and attribute. The new entry belongs to the current level.
+  // duplicated is set to to true iff there is already an entry for the
+  // same identifier at the current level.
+
+  public void enter (String id, Declaration attr) {
+	  IdEntry entry;
+	  if(exist(id)){
+		  //Previous declaration of the name exist
+		  boolean dup =false;
+		  IdEntry prev = getEntry(id);
+		  if(prev.level == level || prev.level>=3){
+			  //duplicated
+			  dup = true;
+			  attr.duplicated = dup;
+			  IdentificationErrorDeclaration("Duplicate ID, ("+id+", "+attr.posn.toString()+") with ("+prev.id+", "+prev.attr.posn.toString()+")");
+		  } 
+		  removeEntry(id);
+		  entry = new IdEntry(id, attr, level, prev);
+		  addEntry(id,entry);
+	  } else{
+		//Id declared for the 1st time
+		 entry = new IdEntry(id, attr, level, null);
+		 addEntry(id, entry);
+	  }
+  }
+
+  // Finds an entry for the given identifier in the identification table,
+  // if any. If there are several entries for that identifier, finds the
+  // entry at the highest level, in accordance with the scope rules.
+  // Returns null iff no entry is found.
+  // otherwise returns the attribute field of the entry found.
+
+  public Declaration retrieve (String id) {
+    Declaration attr = null;
+    if(exist(id)){
+    	attr = getEntry(id).attr;
+    }
+    return attr;
+  }
+  
+  
+  //retrieve class decl
+  //return null if class declaration not exist
+  public Declaration retrieveClass (String id){
+	  Declaration attr = null;
+	  IdEntry entry;
+	  if(exist(id)){
+		  entry = getEntry(id);
+		  while(entry != null && entry.level != 1){
+			  entry=entry.previous;
+		  }
+		  if(entry != null){
+			  attr = entry.attr;
+		  }
+	  }
+	  return attr;
+  }
+
+	private void IdentificationErrorDeclaration(String e) {
+		errorReporter.reportError("Idenficiation error - declaration: " + e);
+	}
+}

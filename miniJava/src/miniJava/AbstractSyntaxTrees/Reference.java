@@ -11,6 +11,8 @@ public abstract class Reference extends AST
 {
 	public Reference(SourcePosition posn){
 		super(posn);
+		decl = null;
 	}
+	public AST decl; // Either a Declaration or a FieldTypeDenoter
 
 }

@@ -5,16 +5,19 @@
  */
 package miniJava.AbstractSyntaxTrees;
 
+import miniJava.AbstractSyntaxTrees.AST;
 import miniJava.SyntacticAnalyzer.Token;
 
 public class Identifier extends Terminal {
 
   public Identifier (Token t) {
     super (t);
+    decl = null;
   }
 
   public <A,R> R visit(Visitor<A,R> v, A o) {
       return v.visitIdentifier(this, o);
   }
+  public AST decl; // Either a Declaration or a FieldTypeDenoter
 
 }

@@ -22,6 +22,7 @@ import java.io.InputStream;
 
 import miniJava.AbstractSyntaxTrees.ASTDisplay;
 import miniJava.AbstractSyntaxTrees.AST;
+import miniJava.ContextualAnalyzer.IdentificationAnalyzer;
 import miniJava.SyntacticAnalyzer.Parser;
 import miniJava.SyntacticAnalyzer.Scanner;
 import miniJava.SyntacticAnalyzer.SourceFile;
@@ -67,20 +68,31 @@ public class Compiler {
 		ErrorReporter reporter = new ErrorReporter();
 		Scanner scanner = new Scanner(sourceFile, reporter);
 		Parser parser = new Parser(scanner, reporter);
+		IdentificationAnalyzer idenAnalyzer = new IdentificationAnalyzer(reporter);
 
-		//System.out.println("Syntactic analysis ... ");
+		System.out.println("Syntactic analysis ... ");
 		AST ast = parser.parse();
-		//System.out.print("Syntactic analysis complete:  ");
+		System.out.println("Syntactic analysis complete:  ");
+		
 		if (reporter.hasErrors()) {
-			System.out.println("INVALID arithmetic expression");
+			System.out.println(" - Syntactic analysis ERROR");
 			System.exit(4);
+		} else {
+			System.out.println(" - Syntactic analysis PASSED");
 		}
-		else {
-			//System.out.println("valid arithmetic expression");
-			ASTDisplay display = new ASTDisplay();
-	        display.showTree(ast);
-			System.exit(0);
+		System.out.println("");
+		System.out.println("Contexual analysis ... ");
+		idenAnalyzer.check(ast);
+		System.out.println("Contexual analysis complete:  ");
+		
+		if (reporter.hasErrors()) {
+			System.out.println(" - Contexual analysis ERROR");
+			System.exit(4);
+		} else {
+			System.out.println(" - Contexual analysis PASSED");
 		}
+		
+		System.exit(0);
 	}
 }
 
