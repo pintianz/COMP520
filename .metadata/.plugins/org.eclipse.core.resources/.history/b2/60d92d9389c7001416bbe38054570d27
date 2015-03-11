@@ -44,6 +44,19 @@ public class IdentificationTable {
 	  	String id;
 		IdEntry entry;
 		
+//		Iterator<Entry<String, IdEntry>> it = map.entrySet().iterator();
+//		while (it.hasNext()){
+//		    Entry<String, IdEntry> e = it.next();
+//		    id = e.getKey();
+//			entry = e.getValue();
+//	    	while(entry != null && entry.level == this.level){
+//	    	    entry = entry.previous;
+//	    	    removeEntry(id);
+//	    	    if(entry != null){
+//	    	    	addEntry(id, entry);
+//	    	    }
+//	    	}
+//		}
 		
 		for(Entry<String, IdEntry> e: map.entrySet()){
 			id = e.getKey();
@@ -70,7 +83,7 @@ public class IdentificationTable {
   // duplicated is set to to true iff there is already an entry for the
   // same identifier at the current level.
 
-  public void enter (String id, Declaration attr, Declaration enclosedClass) {
+  public void enter (String id, Declaration attr) {
 	  IdEntry entry;
 	  if(exist(id)){
 		  //Previous declaration of the name exist
@@ -83,11 +96,11 @@ public class IdentificationTable {
 			  IdentificationErrorDeclaration("Duplicate ID, ("+id+", "+attr.posn.toString()+") with ("+prev.id+", "+prev.attr.posn.toString()+")");
 		  } 
 		  removeEntry(id);
-		  entry = new IdEntry(id, attr, level, prev, enclosedClass);
+		  entry = new IdEntry(id, attr, level, prev);
 		  addEntry(id,entry);
 	  } else{
 		//Id declared for the 1st time
-		 entry = new IdEntry(id, attr, level, null, enclosedClass);
+		 entry = new IdEntry(id, attr, level, null);
 		 addEntry(id, entry);
 	  }
   }

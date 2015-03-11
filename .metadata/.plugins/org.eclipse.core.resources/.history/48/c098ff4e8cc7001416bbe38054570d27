@@ -6,6 +6,6 @@ class id {
     }
 }
 class IDid {
-	static boolean zz;
+	boolean zz =  !!!!!b;
 }
 

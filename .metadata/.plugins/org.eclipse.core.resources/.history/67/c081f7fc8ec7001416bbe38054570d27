@@ -119,13 +119,13 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     }
     
     public Object visitParameterDecl(ParameterDecl pd, String arg){
-    	idTable.enter(pd.name, pd, null); //level 3 method parameter
+    	idTable.enter(pd.name, pd); //level 3 method parameter
         pd.type.visit(this, "");
         return null;
     } 
     
     public Object visitVarDecl(VarDecl vd, String arg){ //local variable decl
-    	idTable.enter(vd.name, vd, null);
+    	idTable.enter(vd.name, vd);
         vd.type.visit(this, "");
         return null;
     }

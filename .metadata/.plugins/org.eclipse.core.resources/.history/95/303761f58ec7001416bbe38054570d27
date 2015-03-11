@@ -46,21 +46,11 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
 
     public Object visitPackage(Package prog, String arg){
         for (ClassDecl c: prog.classDeclList){
-        	idTable.enter(c.name, c, null); //level 1 class name
+        	idTable.enter(c.name, c); //level 1 class name
         }
         
         //open level 2 class member
         idTable.openScope();
-        
-        for (ClassDecl c: prog.classDeclList){
-        	for (FieldDecl f: c.fieldDeclList){
-        		idTable.enter(f.name, f, c); //level 2 class member
-        	}
-            for (MethodDecl m: c.methodDeclList){
-            	idTable.enter(m.name, m, c); //level 2 class member
-            }
-        }
-        
         for (ClassDecl c: prog.classDeclList){
         	c.visit(this, "");
         }
@@ -77,6 +67,13 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     
     public Object visitClassDecl(ClassDecl clas, String arg){
     	curClass = idTable.retrieveClass(clas.name);
+    	
+    	for (FieldDecl f: clas.fieldDeclList){
+    		idTable.enter(f.name, f); //level 2 class member
+    	}
+        for (MethodDecl m: clas.methodDeclList){
+        	idTable.enter(m.name, m); //level 2 class member
+        }
         
         for (FieldDecl f: clas.fieldDeclList){
         	f.visit(this, "");
@@ -119,13 +116,13 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     }
     
     public Object visitParameterDecl(ParameterDecl pd, String arg){
-    	idTable.enter(pd.name, pd, null); //level 3 method parameter
+    	idTable.enter(pd.name, pd); //level 3 method parameter
         pd.type.visit(this, "");
         return null;
     } 
     
     public Object visitVarDecl(VarDecl vd, String arg){ //local variable decl
-    	idTable.enter(vd.name, vd, null);
+    	idTable.enter(vd.name, vd);
         vd.type.visit(this, "");
         return null;
     }
