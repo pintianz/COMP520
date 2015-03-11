@@ -11,5 +11,5 @@ class IDid {
 
 class id2 {
 	//boolean b = true;
-	static boolean x;
+	static boolean x =  !!!!!b;
 }
