@@ -305,6 +305,9 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
 	///////////////////////////////////////////////////////////////////////////////
     
     public Object visitIdentifier(Identifier id, String arg){
+    	switch(arg){
+    		case("qualifiedRef"):
+    	}
     	Declaration decl =  idTable.retrieve(id.spelling);
         if(decl==null){
         	IdentificationError("Reference to id: " + id.spelling + " is not declared in "+id.posn.toString());

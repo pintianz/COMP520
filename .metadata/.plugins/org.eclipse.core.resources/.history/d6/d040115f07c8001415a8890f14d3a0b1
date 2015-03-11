@@ -1,0 +1,13 @@
+// PA1 lex unop pass
+class id {
+    void p(){
+    	//boolean b = true;
+        boolean x =  !!!!!b;
+        
+    }
+}
+
+class id2 {
+	//boolean b = true;
+	static boolean x =  !!!!!b;
+}
