@@ -1,0 +1,26 @@
+/**
+ * miniJava Abstract Syntax Tree classes
+ * @author prins
+ * @version COMP 520 (v2.2)
+ */
+package miniJava.AbstractSyntaxTrees;
+
+import miniJava.SyntacticAnalyzer.SourcePosition;
+
+public abstract class Reference extends AST
+{
+	public Reference(SourcePosition posn){
+		super(posn);
+		decl = null;
+		boolean id2 = false;
+		boolean x2 = id2.x;
+	}
+	public AST decl; // Either a Declaration or a FieldTypeDenoter
+
+}
+
+class id2 {
+	//boolean b = true;
+	static boolean x =  new id2();
+}
+
