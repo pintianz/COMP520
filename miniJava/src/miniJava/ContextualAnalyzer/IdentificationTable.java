@@ -12,11 +12,13 @@ public class IdentificationTable {
 
   private int level;
   private ConcurrentHashMap<String, IdEntry>map;
+  private ConcurrentHashMap<String, ConcurrentHashMap<String, Declaration>>classMap;
   private ErrorReporter errorReporter;
 
   public IdentificationTable (ErrorReporter errorReporter) {
     level = 1;
     map = new ConcurrentHashMap<String, IdEntry>();
+    classMap = new ConcurrentHashMap<String, ConcurrentHashMap<String, Declaration>>();
     this.errorReporter = errorReporter;
   }
 
@@ -70,7 +72,7 @@ public class IdentificationTable {
   // duplicated is set to to true iff there is already an entry for the
   // same identifier at the current level.
 
-  public void enter (String id, Declaration attr, Declaration enclosedClass) {
+  public void enter (String id, Declaration attr) {
 	  IdEntry entry;
 	  if(exist(id)){
 		  //Previous declaration of the name exist
@@ -83,11 +85,11 @@ public class IdentificationTable {
 			  IdentificationErrorDeclaration("Duplicate ID, ("+id+", "+attr.posn.toString()+") with ("+prev.id+", "+prev.attr.posn.toString()+")");
 		  } 
 		  removeEntry(id);
-		  entry = new IdEntry(id, attr, level, prev, enclosedClass);
+		  entry = new IdEntry(id, attr, level, prev);
 		  addEntry(id,entry);
 	  } else{
 		//Id declared for the 1st time
-		 entry = new IdEntry(id, attr, level, null, enclosedClass);
+		 entry = new IdEntry(id, attr, level, null);
 		 addEntry(id, entry);
 	  }
   }
@@ -126,21 +128,39 @@ public class IdentificationTable {
   
 //retrieve class decl
   //return null if class declaration not exist
-  public Declaration retrieveMember (String id){
+//  public Declaration retrieveMember (String id){
+//	  Declaration attr = null;
+//	  IdEntry entry;
+//	  if(exist(id)){
+//		  entry = getEntry(id);
+//		  while(entry != null && entry.level != 2){
+//			  entry=entry.previous;
+//		  }
+//		  if(entry != null){
+//			  attr = entry.attr;
+//		  }
+//	  }
+//	  return attr;
+//  }
+
+  
+  public void enterClass (String classId, String memberId, Declaration attr) {
+	  if(!classMap.containsKey(classId)){
+		  classMap.put(classId, new ConcurrentHashMap<String, Declaration>());
+	  }
+	  classMap.get(classId).put(memberId,attr);
+  }
+  
+  public Declaration retrieveMember (String classId, String memberId){
 	  Declaration attr = null;
-	  IdEntry entry;
-	  if(exist(id)){
-		  entry = getEntry(id);
-		  while(entry != null && entry.level != 2){
-			  entry=entry.previous;
-		  }
-		  if(entry != null){
-			  attr = entry.attr;
+	  if(classMap.containsKey(classId)){
+		  if(classMap.get(classId).containsKey(memberId)){
+			  attr = classMap.get(classId).get(memberId);
 		  }
 	  }
 	  return attr;
   }
-
+  
 	private void IdentificationErrorDeclaration(String e) {
 		errorReporter.reportError("Idenficiation error - declaration: " + e);
 	}

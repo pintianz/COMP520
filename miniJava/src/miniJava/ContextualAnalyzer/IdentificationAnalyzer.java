@@ -45,26 +45,27 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
 	/////////////////////////////////////////////////////////////////////////////// 
 
     public Object visitPackage(Package prog, String arg){
+    	//ID Table populate level 1 decl
         for (ClassDecl c: prog.classDeclList){
-        	idTable.enter(c.name, c, null); //level 1 class name
+        	idTable.enter(c.name, c); //level 1 class name
         }
         
-        //open level 2 class member
-        idTable.openScope();
-        
+        //populate classmember
         for (ClassDecl c: prog.classDeclList){
         	for (FieldDecl f: c.fieldDeclList){
-        		idTable.enter(f.name, f, c); //level 2 class member
+        		idTable.enterClass(c.name, f.name, f);
         	}
-            for (MethodDecl m: c.methodDeclList){
-            	idTable.enter(m.name, m, c); //level 2 class member
-            }
+        	for (MethodDecl m: c.methodDeclList){
+        		idTable.enterClass(c.name, m.name, m);
+        	}
         }
         
         for (ClassDecl c: prog.classDeclList){
+        	//open level 2 class member
+        	idTable.openScope();
         	c.visit(this, "");
+        	idTable.closeScope();
         }
-        idTable.closeScope();
         return null;
     }
     
@@ -77,10 +78,13 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     
     public Object visitClassDecl(ClassDecl clas, String arg){
     	curClass = idTable.retrieveClass(clas.name);
-        
-        for (FieldDecl f: clas.fieldDeclList){
-        	f.visit(this, "");
-        }
+    	System.out.println("**"+clas.name);
+    	//populate current class: class member
+    	for (FieldDecl f: clas.fieldDeclList){
+    		f.visit(this, "");
+    		System.out.println(f.name);
+    		idTable.enter(f.name, f); //level 2 class member
+    	}
         
         //open level 3 method parameters
         idTable.openScope();
@@ -119,13 +123,15 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     }
     
     public Object visitParameterDecl(ParameterDecl pd, String arg){
-    	idTable.enter(pd.name, pd, null); //level 3 method parameter
+    	//populate level 3 method parameter
+    	idTable.enter(pd.name, pd);
         pd.type.visit(this, "");
         return null;
     } 
     
     public Object visitVarDecl(VarDecl vd, String arg){ //local variable decl
-    	idTable.enter(vd.name, vd, null);
+    	//populate level 4+ decl
+    	idTable.enter(vd.name, vd);
         vd.type.visit(this, "");
         return null;
     }
@@ -275,29 +281,55 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
 	//
 	///////////////////////////////////////////////////////////////////////////////
 	
+    //ALL REFERENCE VISITOR RETURN ITS OWN CONTEXT: StaticClass, InstanceClass, ThisClass
     public Object visitQualifiedRef(QualifiedRef qr, String arg) {
-    	qr.id.visit(this, "");
+    	RefContext surroundingContext;
+    	
+    	//visit reference to obtain context
+    	surroundingContext = (RefContext)qr.ref.visit(this, "");
+    	
+    	switch(surroundingContext){
+    		case StaticClass:
+    			qr.id.visit(this, qr.ref.decl.name);
+    			if(!qr.id.decl.checkStatic()){
+    				IdentificationError("Unable to access class member " + qr.id.spelling + " at "+qr.id.toString() + " from class "+ qr.ref.decl.name +" because it is not static");
+    			}
+    			if(qr.id.decl.checkPrivate()){
+    				IdentificationError("Unable to access class member " + qr.id.spelling + " at "+qr.id.toString() + " from class "+ qr.ref.decl.name +" because it is private");
+    			}
+    			break;
+    		case InstanceClass:
+    			qr.id.visit(this, ((ClassType)qr.ref.decl.type).className.spelling);
+    			if(qr.id.decl.checkPrivate()){
+    				IdentificationError("Unable to access class member " + qr.id.spelling + " at "+qr.id.toString() + " from class "+ qr.ref.decl.name +" because it is private");
+    			}
+    			break;
+    		default: //this class
+    			qr.id.visit(this, "");
+    			break;
+    	}
     	qr.decl = qr.id.decl;
-    	qr.ref.visit(this, "");
-	    return null;
+	    return RefContext.InstanceClass;
     }
     
     public Object visitIndexedRef(IndexedRef ir, String arg) {
     	ir.indexExpr.visit(this, "");
     	ir.ref.visit(this, "");
     	ir.decl = ir.ref.decl;
-    	return null;
+    	return RefContext.InstanceClass;
     }
     
     public Object visitIdRef(IdRef ref, String arg) {
     	ref.id.visit(this, "");
     	ref.decl = ref.id.decl;
-    	return null;
+    	Declaration tempClass = idTable.retrieveClass(ref.id.spelling);
+    	if(tempClass!= null && tempClass==ref.id.decl) return RefContext.StaticClass;
+    	return RefContext.InstanceClass;
     }
    
     public Object visitThisRef(ThisRef ref, String arg) {
     	ref.decl = curClass;
-    	return null;
+    	return RefContext.ThisClass;
     }
     
     
@@ -307,17 +339,27 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
 	//
 	///////////////////////////////////////////////////////////////////////////////
     
+    
+    //arg is the name of the class if the identifier is a class member
     public Object visitIdentifier(Identifier id, String arg){
-    	switch(arg){
-    		case("qualifiedRef"):
+    	if(arg!=null&&arg.length()>0){
+    		System.out.println(arg+"--"+id);
+    		Declaration decl =  idTable.retrieveMember(arg, id.spelling);
+	        if(decl==null){
+	        	IdentificationError("Reference to class member: " + id.spelling + " is not declared in "+id.posn.toString());
+	        } else {
+	        	id.decl = decl;
+	        }
+	        return null;
+    	} else {
+	    	Declaration decl =  idTable.retrieve(id.spelling);
+	        if(decl==null){
+	        	IdentificationError("Reference to id: " + id.spelling + " is not declared in "+id.posn.toString());
+	        } else {
+	        	id.decl = decl;
+	        }
+	        return null;
     	}
-    	Declaration decl =  idTable.retrieve(id.spelling);
-        if(decl==null){
-        	IdentificationError("Reference to id: " + id.spelling + " is not declared in "+id.posn.toString());
-        } else {
-        	id.decl = decl;
-        }
-        return null;
     }
     
     public Object visitOperator(Operator op, String arg){

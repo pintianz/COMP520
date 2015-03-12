@@ -20,7 +20,12 @@ abstract public class MemberDecl extends Declaration {
     	this.isPrivate = md.isPrivate;
     	this.isStatic = md.isStatic;
     }
-    
+    public boolean checkPrivate(){
+	  return isPrivate;
+	  }
+	public boolean checkStatic(){
+	  return isStatic;
+	  }
     public boolean isPrivate;
     public boolean isStatic;
 }

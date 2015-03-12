@@ -1,0 +1,20 @@
+// PA1 lex unop pass
+class id {
+	static boolean zz;
+    void p(){
+    	//boolean b = true;
+    	IDid ii = new IDid();
+    	boolean zz = true;
+        //boolean x =  IDid.zz;
+    	//boolean x =  ii.zz;
+    	boolean x =  zz;
+    }
+}
+class IDid {
+	static boolean zz;
+}
+
+class id2 {
+	//boolean b = true;
+	static boolean x;
+}

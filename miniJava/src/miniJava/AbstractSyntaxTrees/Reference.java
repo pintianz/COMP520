@@ -13,6 +13,6 @@ public abstract class Reference extends AST
 		super(posn);
 		decl = null;
 	}
-	public AST decl; // Either a Declaration or a FieldTypeDenoter
+	public Declaration decl; // Either a Declaration or a FieldTypeDenoter
 
 }

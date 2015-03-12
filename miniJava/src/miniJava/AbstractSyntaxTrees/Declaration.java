@@ -15,6 +15,8 @@ public abstract class Declaration extends AST {
 		this.type = type;
 		duplicated = false;
 	}
+	abstract public boolean checkPrivate();
+	abstract public boolean checkStatic();
 	public boolean duplicated;
 	public String name;
 	public Type type;

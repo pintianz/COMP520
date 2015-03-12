@@ -18,6 +18,12 @@ public class ClassDecl extends Declaration {
   public <A,R> R visit(Visitor<A, R> v, A o) {
       return v.visitClassDecl(this, o);
   }
+  public boolean checkPrivate(){
+	  return false;
+  }
+  public boolean checkStatic(){
+	  return false;
+  }
       
   public FieldDeclList fieldDeclList;
   public MethodDeclList methodDeclList;

@@ -12,5 +12,11 @@ public abstract class LocalDecl extends Declaration {
 	public LocalDecl(String name, Type t, SourcePosition posn){
 		super(name,t,posn);
 	}
+	public boolean checkPrivate(){
+	  return true;
+    }
+    public boolean checkStatic(){
+	  return false;
+    }
 
 }
