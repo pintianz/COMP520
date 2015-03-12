@@ -8,12 +8,22 @@ public class IdEntry {
   protected Declaration attr;
   protected int level;
   protected IdEntry previous;
-
+  protected boolean beingDeclared;
   IdEntry (String id, Declaration attr, int level, IdEntry previous) {
     this.id = id;
     this.attr = attr;
     this.level = level;
     this.previous = previous;
+    this.beingDeclared = false;
+  }
+  public void setBeingDeclared(){
+	  beingDeclared = true;
+  }
+  public void removeBeingDeclared(){
+	  beingDeclared = false;
+  }
+  public boolean checkBeingDeclared(){
+	  return beingDeclared;
   }
 
 }

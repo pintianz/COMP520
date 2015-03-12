@@ -17,6 +17,7 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
 	private IdentificationTable idTable;
 	private ErrorReporter reporter;
 	private Declaration curClass;
+	private AST astII; //implicit import ASK root
 	
 	public IdentificationAnalyzer (ErrorReporter reporter) {
 		this.reporter = reporter;
@@ -32,12 +33,17 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
      * print text representation of AST to stdout
      * @param ast root node of AST 
      */
-    public void check(AST ast){
+    public void check(AST ast, AST astii){
+    	astII = astii;
         ast.visit(this, "");
     }   
     
-    
-    
+    private void mergeImplicitImport(Package prog){
+    	for(ClassDecl cd: ((Package)astII).classDeclList){
+    		prog.classDeclList.add(cd);
+    	}
+    }
+   
 	///////////////////////////////////////////////////////////////////////////////
 	//
 	// PACKAGE
@@ -45,6 +51,10 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
 	/////////////////////////////////////////////////////////////////////////////// 
 
     public Object visitPackage(Package prog, String arg){
+    	//load implicit imports
+    	mergeImplicitImport(prog);
+    	
+    	
     	//ID Table populate level 1 decl
         for (ClassDecl c: prog.classDeclList){
         	idTable.enter(c.name, c); //level 1 class name
@@ -78,11 +88,9 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     
     public Object visitClassDecl(ClassDecl clas, String arg){
     	curClass = idTable.retrieveClass(clas.name);
-    	System.out.println("**"+clas.name);
     	//populate current class: class member
     	for (FieldDecl f: clas.fieldDeclList){
     		f.visit(this, "");
-    		System.out.println(f.name);
     		idTable.enter(f.name, f); //level 2 class member
     	}
         
@@ -190,8 +198,11 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     }
     
     public Object visitVardeclStmt(VarDeclStmt stmt, String arg){
-        stmt.varDecl.visit(this, "");	
+        stmt.varDecl.visit(this, "");
+        //flag the variable being declared to prevent access while initializing the variable
+        idTable.setBeingDeclared(stmt.varDecl.name);
         stmt.initExp.visit(this, "");
+        idTable.removeBeingDeclared(stmt.varDecl.name);
         return null;
     }
     
@@ -287,26 +298,34 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     	
     	//visit reference to obtain context
     	surroundingContext = (RefContext)qr.ref.visit(this, "");
-    	
-    	switch(surroundingContext){
-    		case StaticClass:
-    			qr.id.visit(this, qr.ref.decl.name);
-    			if(!qr.id.decl.checkStatic()){
-    				IdentificationError("Unable to access class member " + qr.id.spelling + " at "+qr.id.toString() + " from class "+ qr.ref.decl.name +" because it is not static");
-    			}
-    			if(qr.id.decl.checkPrivate()){
-    				IdentificationError("Unable to access class member " + qr.id.spelling + " at "+qr.id.toString() + " from class "+ qr.ref.decl.name +" because it is private");
-    			}
-    			break;
-    		case InstanceClass:
-    			qr.id.visit(this, ((ClassType)qr.ref.decl.type).className.spelling);
-    			if(qr.id.decl.checkPrivate()){
-    				IdentificationError("Unable to access class member " + qr.id.spelling + " at "+qr.id.toString() + " from class "+ qr.ref.decl.name +" because it is private");
-    			}
-    			break;
-    		default: //this class
-    			qr.id.visit(this, "");
-    			break;
+    	if(qr.ref.decl != null){
+	    	switch(surroundingContext){
+	    		case StaticClass:
+	    			qr.id.visit(this, qr.ref.decl.name);
+	    			if(qr.id.decl != null){
+	    				if(!qr.id.decl.checkStatic()){
+	        				IdentificationError("Unable to access class member " + qr.id.spelling + " at "+qr.id.posn.toString() + " from class "+ qr.ref.decl.name +" because it is not static");
+	        			}
+	        			if(qr.id.decl.checkPrivate()){
+	        				IdentificationError("Unable to access class member " + qr.id.spelling + " at "+qr.id.posn.toString() + " from class "+ qr.ref.decl.name +" because it is private");
+	        			}
+	    			}
+	    			break;
+	    		case InstanceClass:
+	    			qr.id.visit(this, ((ClassType)qr.ref.decl.type).className.spelling);
+	    			if(qr.id.decl != null){
+		    			if(qr.id.decl.checkPrivate()){
+		    				IdentificationError("Unable to access class member " + qr.id.spelling + " at "+qr.id.posn.toString() + " from class "+ qr.ref.decl.name +" because it is private");
+		    			}
+	    			}
+	    			break;
+	    		case ThisClass:
+	    			qr.id.visit(this, ((ClassDecl)curClass).name);
+	    			break;
+	    		default: //this class
+	    			IdentificationError("Unknown case reached while analyzing qualified reference " + qr.id.spelling + " at "+qr.id.posn.toString() + " from class "+ qr.ref.decl.name);
+	    			break;
+	    	}
     	}
     	qr.decl = qr.id.decl;
 	    return RefContext.InstanceClass;
@@ -342,11 +361,10 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     
     //arg is the name of the class if the identifier is a class member
     public Object visitIdentifier(Identifier id, String arg){
-    	if(arg!=null&&arg.length()>0){
-    		System.out.println(arg+"--"+id);
+    	if(arg!=null&&arg.length()>0){ //specified class name
     		Declaration decl =  idTable.retrieveMember(arg, id.spelling);
 	        if(decl==null){
-	        	IdentificationError("Reference to class member: " + id.spelling + " is not declared in "+id.posn.toString());
+	        	IdentificationError("Reference to class member: " + id.spelling + " in "+id.posn.toString()+" is not declared in class "+arg);
 	        } else {
 	        	id.decl = decl;
 	        }

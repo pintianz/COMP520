@@ -1,0 +1,7 @@
+package miniJava.ContextualAnalyzer;
+import miniJava.AbstractSyntaxTrees.*;
+public class ImplicitImport {
+	public ClassDecl generateClassDecl(String className){
+		
+	}
+}

@@ -6,7 +6,8 @@ import java.io.InputStream;
 
 public class SourceFile {
 
-  static final char eol = '\n';
+  static final char eolUnix = '\n';
+  static final char eolWindows = '\r';
   static final char eot = '\u0000';
 
   InputStream sourceFile;
@@ -21,10 +22,9 @@ public class SourceFile {
   char getSource() {
     try {
       int c = source.read();
-
       if (c == -1) {
         c = eot;
-      } else if (c == eol) {
+      } else if (c == eolUnix || c == eolWindows) {
           currentLine++;
       }
       return (char) c;
@@ -37,6 +37,9 @@ public class SourceFile {
   int getSourceInt() {
 	    try {
 	      int c = source.read();
+	      if (c == eolUnix || c == eolWindows) {
+	          currentLine++;
+	      }
 	      return c;
 	    }
 	    catch (java.io.IOException s) {

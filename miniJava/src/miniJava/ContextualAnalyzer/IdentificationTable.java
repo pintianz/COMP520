@@ -93,6 +93,18 @@ public class IdentificationTable {
 		 addEntry(id, entry);
 	  }
   }
+  
+  public void setBeingDeclared (String id) {
+	  if(exist(id)){
+		  getEntry(id).setBeingDeclared();
+	  } 
+  }
+  
+  public void removeBeingDeclared (String id) {
+	  if(exist(id)){
+		  getEntry(id).removeBeingDeclared();
+	  } 
+  }
 
   // Finds an entry for the given identifier in the identification table,
   // if any. If there are several entries for that identifier, finds the
@@ -104,6 +116,9 @@ public class IdentificationTable {
     Declaration attr = null;
     if(exist(id)){
     	attr = getEntry(id).attr;
+    	if(getEntry(id).checkBeingDeclared()){
+    		IdentificationErrorDeclaration("Cannot reference variable ("+id+", "+attr.posn.toString()+") while its being declared");
+		} 
     }
     return attr;
   }

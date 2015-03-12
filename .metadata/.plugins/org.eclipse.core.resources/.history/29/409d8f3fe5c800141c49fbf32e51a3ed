@@ -1,0 +1,843 @@
+/**
+ * Parser
+ *
+ * Grammar:
+ *   Program  ::=  (ClassDeclaration)* eot
+ *   ClassDeclaration  ::=  'class' id '{' (DeclarationHead)* '}'
+ *   DeclarationHead ::= Declarators id (MethodDeclarationTail|';')
+ *   MethodDeclarationTail ::= '('ParameterList? ')' '{' Statement* ('return' Expression ';')? '}'
+ *   Declarators  ::= ('public' | 'private')?   'static'?   (Type | 'void')
+ *   Type  ::= 'boolean'  |  (id | 'int')  ('[' ']')?
+ *   ParameterList  ::=  Type id (',' Type id)*
+ *   ArgumentList  ::=  Expression (',' Expression)*
+ *   Reference  ::=  ('this' | id)(.id)* 
+ *   IxReferenceTail  ::=  ( '[' Expression ']' )?
+ *   Statement  ::=    
+ *   '{' Statement* '}' 
+ *   |  Type id = Expression ';'
+ *   |  Reference ( '(' ArgumentList? ')' ';' | IxReferenceTail =  Expression ';' )
+ *   |  'if' ( Expression )  Statement  ('else'  Statement)?  
+ *   |  'while' ( Expression )  Statement  
+ *   Expression  ::=   
+ *   |  Reference ( ( '(' ArgumentList? ')') | IxReferenceTail)
+ *   |  unop Expression
+ *   |  Expression binop Expression
+ *   |  '(' Expression ')'
+ *   |  num | 'true'  |  'false'
+ *   |  'new'  ( id '('')' | 'int' '[' Expression ']'  |  id '[' Expression ']' )
+ */
+package miniJava.SyntacticAnalyzer;
+
+
+
+import miniJava.SyntacticAnalyzer.Scanner;
+import miniJava.SyntacticAnalyzer.TokenKind;
+import miniJava.AbstractSyntaxTrees.*;
+import miniJava.AbstractSyntaxTrees.Package;
+import miniJava.ErrorReporter;
+
+public class Parser {
+
+	private Scanner scanner;
+	private ErrorReporter reporter;
+	private Token token;
+	private SourcePosition previousTokenPosition;
+	private boolean trace = true;
+
+	public Parser(Scanner scanner, ErrorReporter reporter) {
+		this.scanner = scanner;
+		this.reporter = reporter;
+		previousTokenPosition = new SourcePosition();
+	}
+
+	/**
+	 * SyntaxError is used to unwind parse stack when parse fails
+	 *
+	 */
+	class SyntaxError extends Error {
+		private static final long serialVersionUID = 1L;	
+	}
+
+	/**
+	 * start parse
+	 */
+	public Package parse() {
+		token = scanner.scan();
+		previousTokenPosition.start = 0;
+	    previousTokenPosition.finish = 0;
+	    Package ret = null;
+	    
+	    try{
+	    	ret = parsePackage();
+		}
+		catch (SyntaxError e) { }
+		return ret;
+	}
+
+	
+	/**
+	 * accept current token and advance to next token
+	 */
+	private void acceptIt() throws SyntaxError {
+		accept(token.kind);
+	}
+
+	/**
+	 * verify that current token in input matches expected token and advance to next token
+	 * @param expectedToken
+	 * @throws SyntaxError  if match fails
+	 */
+	private void accept(TokenKind expectedTokenKind) throws SyntaxError {
+		if (token.kind == expectedTokenKind) {
+			if (trace)
+				pTrace();
+			previousTokenPosition = token.position;
+			token = scanner.scan();
+		}
+		else
+			parseError("expecting '" + expectedTokenKind +
+					"' but found '" + token.kind + "'");
+	}
+	
+	// start records the position of the start of a phrase.
+	// This is defined to be the position of the first
+	// character of the first token of the phrase.
+
+	  void start(SourcePosition position) {
+	    position.start = token.position.start;
+	  }
+
+	// finish records the position of the end of a phrase.
+	// This is defined to be the position of the last
+	// character of the last token of the phrase.
+
+	  void finish(SourcePosition position) {
+	    position.finish = previousTokenPosition.finish;
+	  }
+	
+	  /**
+	 * report parse error and unwind call stack to start of parse
+	 * @param e  string with error detail
+	 * @throws SyntaxError
+	 */
+	private void parseError(String e) throws SyntaxError {
+		reporter.reportError("Parse error: " + e);
+		throw new SyntaxError();
+	}
+	  
+	
+	
+	//    Program  ::=  (ClassDeclaration)* eot
+	private Package parsePackage() throws SyntaxError {
+		Package packageAST = null;
+		ClassDeclList classDeclList = new ClassDeclList();
+		while(token.kind != TokenKind.EOT){
+			classDeclList.add(parseClassDeclaration());
+		}
+		packageAST = new Package(classDeclList, previousTokenPosition);
+		acceptIt();
+		return packageAST;
+	}
+	
+	//  ClassDeclaration  ::=  'class' id '{' (DeclarationHead)* '}'
+	private ClassDecl parseClassDeclaration() throws SyntaxError {
+		ClassDecl classDeclAST = null; // in case there's a syntactic error
+	    SourcePosition classDeclPos = new SourcePosition();
+	    String className;
+	    FieldDeclList fdl = new FieldDeclList();
+	    MethodDeclList mdl = new MethodDeclList();
+	    
+	    MemberDecl mbd;
+	    FieldDecl fd;
+	    MethodDecl md;
+	    SourcePosition declPos = new SourcePosition();
+	    start(classDeclPos);
+	    
+		accept(TokenKind.KW_CLASS);
+		className = token.spelling;
+		accept(TokenKind.ID);
+		accept(TokenKind.LCURLYBRACKET);
+		
+		while(token.kind != TokenKind.RCURLYBRACKET){
+			start(declPos);
+			mbd = parseDeclarators(); //get member decl (nameless)
+			mbd.name = token.spelling; //update the name field
+			accept(TokenKind.ID);
+			
+			if(token.kind == TokenKind.SEMICOLON){ //field Decl
+				acceptIt();
+				finish(declPos);
+				fd = new FieldDecl(mbd, declPos);
+				fdl.add(fd);
+			} else {
+				md = parseMethodDeclarationTail(mbd);
+				finish(declPos);
+				mdl.add(md);
+			}
+		}
+		acceptIt();
+		finish(classDeclPos);
+		classDeclAST = new ClassDecl(className, fdl, mdl, classDeclPos);
+	    
+		return classDeclAST;
+	}
+	 
+	//  MethodDeclarationTail ::= '('ParameterList? ')' '{' Statement* ('return' Expression ';')? '}'
+	private MethodDecl parseMethodDeclarationTail(MemberDecl mbd) throws SyntaxError {
+		MethodDecl methodDeclAST = null; // in case there's a syntactic error
+	    SourcePosition methodDeclPos = new SourcePosition();
+	    methodDeclPos.start = mbd.posn.start;
+	    ParameterDeclList parameterDeclList = new ParameterDeclList();
+		StatementList statementList = new StatementList();
+		Expression returnExp = null;
+		
+		accept(TokenKind.LPAREN);
+		if(token.kind == TokenKind.RPAREN){
+			acceptIt();
+		} else {
+			parameterDeclList = parseParameterList();
+			accept(TokenKind.RPAREN);
+		}
+		accept(TokenKind.LCURLYBRACKET);
+		while(token.kind != TokenKind.KW_RETURN && token.kind != TokenKind.RCURLYBRACKET){
+			statementList.add(parseStatement());
+		}
+		if(token.kind == TokenKind.KW_RETURN){
+			acceptIt();
+			returnExp = parseExpression();
+			accept(TokenKind.SEMICOLON);
+		}
+		accept(TokenKind.RCURLYBRACKET);
+		finish(methodDeclPos);
+		methodDeclAST = new MethodDecl(mbd, parameterDeclList, statementList, returnExp, methodDeclPos);
+		return methodDeclAST;
+	}
+	
+	// Declarators  ::= ('public' | 'private')?   'static'?   (Type | 'void')
+	private MemberDecl parseDeclarators() throws SyntaxError {
+		MemberDecl memberDeclAST = null; // in case there's a syntactic error
+	    SourcePosition memberDeclPos = new SourcePosition();
+	    boolean isPrivate=false;
+	    boolean isStatic=false;
+	    Type mt;
+	    
+	    start(memberDeclPos);
+		if(token.kind == TokenKind.KW_PUBLIC || token.kind == TokenKind.KW_PRIVATE){
+			if(token.kind == TokenKind.KW_PRIVATE){
+				isPrivate=true;
+			}
+			acceptIt();
+		}
+		if(token.kind == TokenKind.KW_STATIC){
+			isStatic=true;
+			acceptIt();
+		}
+		if(token.kind == TokenKind.KW_VOID){
+			mt = new BaseType(TypeKind.VOID, new SourcePosition(token.position.start ,token.position.finish));
+			acceptIt();
+		} else {
+			mt = parseType();
+		}
+		finish(memberDeclPos);
+		memberDeclAST = new FieldDecl(isPrivate, isStatic, mt, null, memberDeclPos);
+		return memberDeclAST;
+	}
+	
+	// Type  ::= 'boolean'  |  (id | 'int')  ('[' ']')?
+	private Type parseType() throws SyntaxError {
+		Type typeAST=null;
+		SourcePosition typePos = new SourcePosition();
+		start(typePos);
+		if(token.kind == TokenKind.KW_BOOLEAN){
+			typeAST = new BaseType(TypeKind.BOOLEAN, typePos);
+			acceptIt();
+		} else{
+			if (token.kind == TokenKind.KW_INT){
+				acceptIt();
+				if(token.kind == TokenKind.LSQRBRACKET){
+					Type temp = new BaseType(TypeKind.INT, typePos);
+					typeAST = new ArrayType(temp, typePos);
+					acceptIt();
+					accept(TokenKind.RSQRBRACKET);
+				} else{
+					typeAST = new BaseType(TypeKind.INT, typePos);
+				}
+			} else if(token.kind == TokenKind.ID){
+				Identifier idAst = parseIdentifier(token);
+				acceptIt();
+				if(token.kind == TokenKind.LSQRBRACKET){
+					Type temp = new ClassType(idAst, typePos);
+					typeAST = new ArrayType(temp, typePos);
+					acceptIt();
+					accept(TokenKind.RSQRBRACKET);
+				} else{
+					typeAST = new ClassType(idAst, typePos);
+				}
+			}else{
+				parseError("Invalid Type - expecting INT, BOOLEAN, ID, ARRAY but found " + token.kind);
+			}
+		}
+		finish(typePos);
+		return typeAST;
+	}
+	
+	// helper function that return the identifier AST node
+	private Identifier parseIdentifier(Token token) throws SyntaxError {
+		Identifier idAST = null;
+		if(token.kind == TokenKind.ID){
+			idAST = new Identifier(token);
+		} else{
+			parseError("Invalid Type - parsing ID, ARRAY but found " + token.kind);
+		}
+		return idAST;
+	}
+	
+	// ParameterList  ::=  Type id (',' Type id)*
+	private ParameterDeclList parseParameterList() throws SyntaxError {
+		ParameterDeclList parameterListAST= new ParameterDeclList();
+		ParameterDecl parameterDecl;
+		SourcePosition parameterDeclPos = new SourcePosition();
+		Type type;
+		String parameterName;
+		
+		start(parameterDeclPos);
+		type = parseType();
+		parameterName = token.spelling;
+		accept(TokenKind.ID);
+		finish(parameterDeclPos);
+		parameterDecl = new ParameterDecl(type, parameterName, parameterDeclPos);
+		parameterListAST.add(parameterDecl);
+		parameterDeclPos = new SourcePosition();
+		
+		while(token.kind == TokenKind.COMMA){
+			acceptIt();
+			
+			start(parameterDeclPos);
+			type = parseType();
+			parameterName = token.spelling;
+			accept(TokenKind.ID);
+			finish(parameterDeclPos);
+			parameterDecl = new ParameterDecl(type, parameterName, parameterDeclPos);
+			parameterListAST.add(parameterDecl);
+			parameterDeclPos = new SourcePosition();
+		}
+		return parameterListAST;
+	}
+	
+	// ArgumentList  ::=  Expression (',' Expression)*
+	private ExprList parseArgumentList() throws SyntaxError {
+		ExprList exprListAST = new ExprList();
+		
+		exprListAST.add(parseExpression());
+		while(token.kind == TokenKind.COMMA){
+			acceptIt();
+			exprListAST.add(parseExpression());
+		}
+		
+		return exprListAST;
+	}
+	
+	// Reference  ::=  ('this' | id)(.id)* 
+	private Reference parseReferenceTail(Reference ref) throws SyntaxError {
+		Reference retRef = ref;
+		SourcePosition qRefPos = new SourcePosition();
+		Identifier id;
+		start(qRefPos);
+		while(token.kind == TokenKind.PERIOD){
+			acceptIt();
+			id = new Identifier(token);
+			accept(TokenKind.ID);
+			retRef = new QualifiedRef(retRef, id, qRefPos);
+		}
+		finish(qRefPos);
+		return retRef;
+	}
+	
+	// IxReferenceTail  ::=  ( '[' Expression ']' )?
+	private Reference parseIxReferenceTail(Reference ref) throws SyntaxError {
+		Reference retRef = ref;
+		SourcePosition ixRefPos = new SourcePosition();
+		Expression expr;
+		start(ixRefPos);
+		if(token.kind == TokenKind.LSQRBRACKET) {
+			acceptIt();
+			expr = parseExpression();
+			accept(TokenKind.RSQRBRACKET);
+			retRef = new IndexedRef(retRef, expr, ixRefPos);
+		}
+		finish(ixRefPos);
+		return retRef;
+	}
+	
+	
+	/* Statement  ::=    
+	 *   '{' Statement* '}' 
+	 *   |  Type id = Expression ';'
+	 *   |  Reference ( '(' ArgumentList? ')' ';' | IxReferenceTail =  Expression ';' )
+	 *   |  'if' ( Expression )  Statement  ('else'  Statement)?  
+	 *   |  'while' ( Expression )  Statement  
+	 */
+	private Statement parseStatement() throws SyntaxError {
+		Statement statement=null;
+		SourcePosition statementPos = new SourcePosition();
+		
+		start(statementPos);
+		switch (token.kind) {
+		case LCURLYBRACKET: //'{' Statement* '}' 
+			StatementList sl = new StatementList();
+			acceptIt();
+			while(token.kind != TokenKind.RCURLYBRACKET){
+				sl.add(parseStatement());
+			}
+			acceptIt();
+			statement = new BlockStmt(sl, statementPos);
+			break;
+			
+		case KW_IF: //'if' ( Expression )  Statement  ('else'  Statement)?  
+			Expression ifCond;
+			Statement thenStmt;
+			Statement elseStmt=null;
+			
+			acceptIt();
+			accept(TokenKind.LPAREN);
+			ifCond = parseExpression();
+			accept(TokenKind.RPAREN);
+			thenStmt = parseStatement();
+			if(token.kind == TokenKind.KW_ELSE) {
+				acceptIt();
+				elseStmt = parseStatement();
+			}
+			statement = new IfStmt(ifCond, thenStmt, elseStmt, statementPos);
+			break;
+			
+		case KW_WHILE: // 'while' ( Expression )  Statement  
+			Expression whileCond;
+			Statement whileBody;
+			
+			acceptIt();
+			accept(TokenKind.LPAREN);
+			whileCond = parseExpression();
+			accept(TokenKind.RPAREN);
+			whileBody = parseStatement();
+			statement = new WhileStmt(whileCond, whileBody, statementPos);
+			break;
+			
+		case KW_BOOLEAN: //Discover to be Type
+			Type typeBool;
+			VarDecl varDeclBool;
+			Expression initExpBool;
+			SourcePosition verDeclBoolPos = new SourcePosition();
+			
+			start(verDeclBoolPos);
+			typeBool = parseType(); //Type id = Expression ';'   
+			varDeclBool = new VarDecl(typeBool, token.spelling, verDeclBoolPos);
+			accept(TokenKind.ID);
+			finish(verDeclBoolPos);
+			
+			accept(TokenKind.OP_EQUAL);
+			initExpBool = parseExpression();
+			accept(TokenKind.SEMICOLON);
+			statement = new VarDeclStmt(varDeclBool, initExpBool, statementPos);
+			
+			break;
+		case KW_INT://Discover to be Type
+			Type typeInt;
+			VarDecl varDeclInt;
+			Expression initExpInt;
+			SourcePosition verDeclIntPos = new SourcePosition();
+			
+			start(verDeclIntPos);
+			typeInt = parseType(); //Type id = Expression ';'  
+			varDeclInt = new VarDecl(typeInt, token.spelling, verDeclIntPos);
+			accept(TokenKind.ID);
+			accept(TokenKind.OP_EQUAL);
+			initExpInt = parseExpression();
+			accept(TokenKind.SEMICOLON);
+			statement = new VarDeclStmt(varDeclInt, initExpInt, statementPos);
+			break;
+			
+		case KW_THIS: //discover to be reference
+			SourcePosition refThisPos = new SourcePosition();
+			Reference refThis = new ThisRef(token.position);
+			Expression assignExpThis;
+			ExprList callListThis = new ExprList();;
+			
+			start(refThisPos);
+			acceptIt();
+			refThis = parseReferenceTail(refThis);
+			refThis = parseIxReferenceTail(refThis);
+			finish(refThisPos);
+			
+			if(token.kind == TokenKind.LPAREN){ //reference(argList?)
+				acceptIt();
+				if(token.kind != TokenKind.RPAREN){
+					callListThis = parseArgumentList();
+				}
+				accept(TokenKind.RPAREN);
+				accept(TokenKind.SEMICOLON);
+				statement = new CallStmt(refThis, callListThis, statementPos);
+			} else { 
+				accept(TokenKind.OP_EQUAL);
+				assignExpThis = parseExpression();
+				accept(TokenKind.SEMICOLON);
+				statement = new AssignStmt(refThis, assignExpThis, statementPos);
+			}
+			break;
+			
+		case ID:
+			VarDecl varDeclId;
+			Expression initExpId;
+			SourcePosition verDeclIdPos = new SourcePosition();
+			Type typeIDClass = new ClassType(new Identifier(token), token.position);
+			Reference idRef = new IdRef(new Identifier(token), token.position);
+			
+			ExprList callStmtIDExprList = new ExprList();
+			
+			start(verDeclIdPos);
+			acceptIt();
+			if(token.kind == TokenKind.ID){ // ID ID = Expression;
+				varDeclId = new VarDecl(typeIDClass, token.spelling, verDeclIdPos);
+				acceptIt();
+				finish(verDeclIdPos);
+				
+				accept(TokenKind.OP_EQUAL);
+				initExpId = parseExpression();
+				accept(TokenKind.SEMICOLON);
+				statement = new VarDeclStmt(varDeclId, initExpId, statementPos);
+				
+			} else if(token.kind == TokenKind.LSQRBRACKET){
+				acceptIt();
+				if(token.kind == TokenKind.RSQRBRACKET){ //ID[] ID = expression
+					Type typeIDArray = new ArrayType(typeIDClass, new SourcePosition(typeIDClass.posn.start,token.position.finish));
+					acceptIt();
+					varDeclId = new VarDecl(typeIDArray, token.spelling, verDeclIdPos);
+					accept(TokenKind.ID);
+					finish(verDeclIdPos);
+					accept(TokenKind.OP_EQUAL);
+					initExpId = parseExpression();
+					accept(TokenKind.SEMICOLON);
+					statement = new VarDeclStmt(varDeclId, initExpId, statementPos);
+					
+				} else { // ID[Expression] = expression | (argList?)
+					Expression idxRefExpression;
+					idxRefExpression = parseExpression();
+					Reference idxRef = new IndexedRef(idRef, idxRefExpression, new SourcePosition(idRef.posn.start, token.position.finish));
+					accept(TokenKind.RSQRBRACKET);
+					if(token.kind == TokenKind.LPAREN){ //reference(argList?) *callStmt
+						acceptIt();
+						if(token.kind != TokenKind.RPAREN){
+							callStmtIDExprList = parseArgumentList();
+						}
+						accept(TokenKind.RPAREN);
+						accept(TokenKind.SEMICOLON);
+						statement = new CallStmt(idxRef, callStmtIDExprList, statementPos);
+						
+					} else {  //assignStmt
+						accept(TokenKind.OP_EQUAL);
+						initExpId = parseExpression();
+						accept(TokenKind.SEMICOLON);
+						statement = new AssignStmt(idxRef, initExpId, statementPos);
+					}
+				}
+			} else {
+				idRef = parseReferenceTail(idRef); //can only be ref or ixRef
+				idRef = parseIxReferenceTail(idRef); 
+				if(token.kind == TokenKind.LPAREN){ //reference(argList?) *callStmt
+					acceptIt();
+					if(token.kind != TokenKind.RPAREN){
+						callStmtIDExprList = parseArgumentList();
+					}
+					accept(TokenKind.RPAREN);
+					accept(TokenKind.SEMICOLON);
+					
+					statement = new CallStmt(idRef, callStmtIDExprList, statementPos);
+					
+				} else {  //assignStmt
+					accept(TokenKind.OP_EQUAL);
+					initExpId = parseExpression();
+					accept(TokenKind.SEMICOLON);
+					statement = new AssignStmt(idRef, initExpId, statementPos);
+				}
+				break;
+			}
+			break;
+		default:
+			parseError("Invalid Term - expecting '{', this, ID, int, Boolean, if, while but got: " + token.kind);
+			break;
+		}
+		finish(statementPos);
+		return statement;
+		
+	}
+		
+	/*Expression  ::=   
+	 *   |  Reference ( ( '(' ArgumentList? ')') | IxReferenceTail)
+	 *   |  unop Expression
+	 *   |  Expression binop Expression
+	 *   |  '(' Expression ')'
+	 *   |  num | 'true'  |  'false'
+	 *   |  'new'  ( id '('')' | 'int' '[' Expression ']'  |  id '[' Expression ']' )
+	 */
+	private Expression parseExpression() throws SyntaxError { //parse Expression start from binart expression top level
+		Expression exprAST = null;
+		SourcePosition exprPos = new SourcePosition();
+		start(exprPos);
+		exprAST = parseExpDisjunction();
+		finish(exprPos);
+		return exprAST;
+	}
+	
+	private Expression parseExpDisjunction() throws SyntaxError { //parse Expression OR
+		Expression exprAST = null;
+		SourcePosition exprPos = new SourcePosition();
+		Operator oper;
+		start(exprPos);
+		exprAST = parseExpConjunction();
+
+		while (token.kind == TokenKind.OP_OR){
+			oper=new Operator(token);
+			acceptIt();
+			Expression exprAST2 = parseExpConjunction();
+			exprAST = new BinaryExpr(oper, exprAST, exprAST2, exprPos);
+		}
+		
+		finish(exprPos);
+		return exprAST;
+	}
+	
+	private Expression parseExpConjunction() throws SyntaxError { //parse Expression AND
+		Expression exprAST = null;
+		SourcePosition exprPos = new SourcePosition();
+		Operator oper;
+		start(exprPos);
+		exprAST = parseExpEquality();
+
+		while (token.kind == TokenKind.OP_AND){
+			oper=new Operator(token);
+			acceptIt();
+			Expression exprAST2 = parseExpEquality();
+			exprAST = new BinaryExpr(oper, exprAST, exprAST2, exprPos);
+		}
+		
+		finish(exprPos);
+		return exprAST;
+	}
+	
+	private Expression parseExpEquality() throws SyntaxError { //parse Expression EQUALITY
+		Expression exprAST = null;
+		SourcePosition exprPos = new SourcePosition();
+		Operator oper;
+		start(exprPos);
+		exprAST = parseExpRelational();
+
+		while (token.kind == TokenKind.OP_EQ || token.kind == TokenKind.OP_NEQ){
+			oper=new Operator(token);
+			acceptIt();
+			Expression exprAST2 = parseExpRelational();
+			exprAST = new BinaryExpr(oper, exprAST, exprAST2, exprPos);
+		}
+		
+		finish(exprPos);
+		return exprAST;
+	}
+	
+	private Expression parseExpRelational() throws SyntaxError { //parse Expression Relational
+		Expression exprAST = null;
+		SourcePosition exprPos = new SourcePosition();
+		Operator oper;
+		start(exprPos);
+		exprAST = parseExpAdditive();
+
+		while (token.kind == TokenKind.OP_GT || token.kind == TokenKind.OP_LT || token.kind == TokenKind.OP_GTE || token.kind == TokenKind.OP_LTE){
+			oper=new Operator(token);
+			acceptIt();
+			Expression exprAST2 = parseExpAdditive();
+			exprAST = new BinaryExpr(oper, exprAST, exprAST2, exprPos);
+		}
+		
+		finish(exprPos);
+		return exprAST;
+	}
+	
+	private Expression parseExpAdditive() throws SyntaxError { //parse Expression Additive
+		Expression exprAST = null;
+		SourcePosition exprPos = new SourcePosition();
+		Operator oper;
+		start(exprPos);
+		exprAST = parseExpMultiplicative();
+
+		while (token.kind == TokenKind.OP_PLUS || token.kind == TokenKind.OP_MINUS){
+			oper=new Operator(token);
+			acceptIt();
+			Expression exprAST2 = parseExpMultiplicative();
+			exprAST = new BinaryExpr(oper, exprAST, exprAST2, exprPos);
+		}
+		
+		finish(exprPos);
+		return exprAST;
+	}
+	
+	private Expression parseExpMultiplicative() throws SyntaxError { //parse Expression Multiplicative
+		Expression exprAST = null;
+		SourcePosition exprPos = new SourcePosition();
+		Operator oper;
+		start(exprPos);
+		exprAST = parseExpUnary();
+
+		while (token.kind == TokenKind.OP_TIMES || token.kind == TokenKind.OP_DIVIDE){
+			oper=new Operator(token);
+			acceptIt();
+			Expression exprAST2 = parseExpUnary();
+			exprAST = new BinaryExpr(oper, exprAST, exprAST2, exprPos);
+		}
+		
+		finish(exprPos);
+		return exprAST;
+	}
+	
+	private Expression parseExpUnary() throws SyntaxError { //parse Expression Unary
+		Expression exprAST = null;
+		SourcePosition exprPos = new SourcePosition();
+		Operator oper;
+		start(exprPos);
+
+		if (token.kind == TokenKind.OP_NEGATE || token.kind == TokenKind.OP_MINUS){
+			oper=new Operator(token);
+			acceptIt();
+			Expression exprAST2 = parseExpUnary();
+			exprAST = new UnaryExpr(oper, exprAST2, exprPos);
+		} else {
+			exprAST = parseExpParen();
+		}
+		
+		finish(exprPos);
+		return exprAST;
+	}
+	
+	private Expression parseExpParen() throws SyntaxError { //parse Expression Parenthesis
+		Expression exprAST = null;
+		SourcePosition exprPos = new SourcePosition();
+		start(exprPos);
+
+		if (token.kind == TokenKind.LPAREN){
+			acceptIt();
+			exprAST = parseExpression();
+			accept(TokenKind.RPAREN);
+		} else {
+			exprAST = parseExpressionLeaf();
+		}
+		
+		finish(exprPos);
+		return exprAST;
+	}
+	
+	private Expression parseExpressionLeaf() throws SyntaxError {
+		Expression exprAST = null;
+		SourcePosition exprPos = new SourcePosition();
+		Terminal termTemp;
+		SourcePosition refPos;
+		Reference ref;
+		
+		start(exprPos);
+		switch (token.kind) {
+		case NUM:
+			termTemp = new IntLiteral(token);
+			exprAST = new LiteralExpr(termTemp,exprPos);
+			acceptIt();
+			break;
+		case KW_TRUE:
+			termTemp = new BooleanLiteral(token);
+			exprAST = new LiteralExpr(termTemp,exprPos);
+			acceptIt();
+			break;
+		case KW_FALSE:
+			termTemp = new BooleanLiteral(token);
+			exprAST = new LiteralExpr(termTemp,exprPos);
+			acceptIt();
+			break;
+		case KW_NEW: //'new'  ( id '('')' | 'int' '[' Expression ']'  |  id '[' Expression ']' )
+			Expression sizeExpr;
+			Type tempType;
+			acceptIt();
+			if(token.kind == TokenKind.KW_INT){
+				tempType = new BaseType(TypeKind.INT, token.position);
+				acceptIt();
+				accept(TokenKind.LSQRBRACKET);
+				sizeExpr = parseExpression();
+				accept(TokenKind.RSQRBRACKET);
+				exprAST = new NewArrayExpr(tempType, sizeExpr, exprPos);
+			} else{
+				tempType = new ClassType(parseIdentifier(token), token.position);
+				accept(TokenKind.ID);
+				if(token.kind == TokenKind.LPAREN){
+					acceptIt();
+					accept(TokenKind.RPAREN);
+					exprAST = new NewObjectExpr((ClassType)tempType, exprPos);
+				} else {
+					accept(TokenKind.LSQRBRACKET);
+					sizeExpr = parseExpression();
+					accept(TokenKind.RSQRBRACKET);
+					exprAST = new NewArrayExpr(tempType, sizeExpr, exprPos);
+				}
+			}
+			break;
+		case KW_THIS: //Reference start with THIS
+			refPos = new SourcePosition();
+			ref = new ThisRef(token.position);
+			
+			acceptIt();
+			ref = parseReferenceTail(ref);
+			ref = parseIxReferenceTail(ref);
+			
+			if(token.kind == TokenKind.LPAREN){
+				acceptIt();
+				ExprList exprList=new ExprList();
+				if(token.kind != TokenKind.RPAREN){
+					exprList=parseArgumentList();
+				}
+				accept(TokenKind.RPAREN);
+				exprAST = new CallExpr(ref, exprList, exprPos);
+			} else {
+				exprAST = new RefExpr(ref, exprPos);
+			}
+			break;
+		case ID: //Reference start with ID
+			refPos = new SourcePosition();
+			Identifier id = new Identifier(token);
+			ref = new IdRef(id, refPos);
+			
+			acceptIt();
+			ref = parseReferenceTail(ref);
+			ref = parseIxReferenceTail(ref);
+			
+			if(token.kind == TokenKind.LPAREN){
+				acceptIt();
+				ExprList exprList=new ExprList();
+				if(token.kind != TokenKind.RPAREN){
+					exprList=parseArgumentList();
+				}
+				accept(TokenKind.RPAREN);
+				exprAST = new CallExpr(ref, exprList, exprPos);
+			} else {
+				exprAST = new RefExpr(ref, exprPos);
+			}
+			break;
+		default:
+			parseError("Invalid Term - Expecting an expression leaf but found " + token.kind);
+		}
+		finish(exprPos);
+		return exprAST;
+	}
+
+	// show parse stack whenever terminal is  accepted
+	private void pTrace() {
+		StackTraceElement [] stl = Thread.currentThread().getStackTrace();
+		for (int i = stl.length - 1; i > 0 ; i--) {
+			if(stl[i].toString().contains("parse"))
+				System.out.println(stl[i]);
+		}
+		System.out.println("accepting: " + token.kind + " (\"" + token.spelling + "\")");
+		System.out.println();
+	}
+
+}

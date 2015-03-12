@@ -2,11 +2,15 @@
 class id {
 	boolean zz;
     void p(){
+    	//boolean zz=true;
     	//boolean b = true;
     	IDid ii = new IDid();
         //boolean x =  IDid.zz;
     	//boolean x =  ii.zz;
-    	boolean x =  id.zz;
+    	boolean x =  IDid.zz;
+    	int a = zzx+1;
+    	int a = zzx+1;
+    	PrintStream.println(zz);
     }
 }
 class IDid {

@@ -1,0 +1,32 @@
+package miniJava.ContextualAnalyzer;
+import miniJava.AbstractSyntaxTrees.*;
+import miniJava.AbstractSyntaxTrees.Package;
+import miniJava.SyntacticAnalyzer.SourcePosition;
+public class ImplicitImport {
+	private static SourcePosition dummyPos = new SourcePosition();
+	private void loadImplicitImports(Package prog){
+    	FieldDeclList fdl;
+    	FieldDecl fd;
+    	MethodDeclList mdl;
+    	MethodDecl md;
+    	ClassDecl cd;
+    	
+    	//class String { }
+    	fdl = new FieldDeclList();
+    	mdl = new MethodDeclList();
+    	cd = new ClassDecl("String", fdl, mdl, dummyPos);
+    	prog.classDeclList.add(cd);
+    	
+    	//class _PrintStream { public void println(int n){}; }
+    	fdl = new FieldDeclList();
+    	mdl = new MethodDeclList();
+    	md = 
+    	cd = new ClassDecl("_PrintStream", fdl, mdl, dummyPos);
+    	prog.classDeclList.add(cd);
+    	
+    	//class System { public static _PrintStream out; }
+    	FieldDeclList fdl = new FieldDeclList();
+    	FieldDecl fd = new FieldDecl(false, true, new ClassType(cn, posn), String name, SourcePosition posn);
+    	fdl.add(new FieldDecl(false, true, new ClassType(cn, posn), String name, SourcePosition posn));
+    }
+}
