@@ -11,6 +11,7 @@ public abstract class AST {
 
   public AST (SourcePosition posn) {
     this.posn = posn;
+    astType = null;
   }
   
   public String toString() {
@@ -24,4 +25,5 @@ public abstract class AST {
   public abstract <A,R> R visit(Visitor<A,R> v, A o);
 
   public SourcePosition posn;
+  public Type astType;
 }

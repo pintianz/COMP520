@@ -1,0 +1,564 @@
+/**
+ * miniJava Abstract Syntax Tree classes
+ * @author prins
+ * @version COMP 520 (v2.2)
+ */
+package miniJava.ContextualAnalyzer;
+
+import java.util.Iterator;
+
+import miniJava.SyntacticAnalyzer.SourcePosition;
+import miniJava.ErrorReporter;
+import miniJava.ContextualAnalyzer.IdentificationTable;
+import miniJava.AbstractSyntaxTrees.*;
+import miniJava.AbstractSyntaxTrees.Package;
+/*
+ * 
+ */
+public class TypeCheckAnalyzer implements Visitor<String,Type> {
+	
+	private ErrorReporter reporter;
+	private static SourcePosition dummyPos = new SourcePosition();
+	private static Type dummyErrorType = new BaseType(TypeKind.ERROR,dummyPos);
+	private static Type dummyUnsupportedType = new BaseType(TypeKind.UNSUPPORTED,dummyPos);
+	private static Type dummyBooleanType = new BaseType(TypeKind.BOOLEAN,dummyPos);
+	private static Type dummyIntType = new BaseType(TypeKind.INT,dummyPos);
+	private static Type dummyVoidType = new BaseType(TypeKind.VOID,dummyPos);
+	
+	private Type curClass;
+	
+	public TypeCheckAnalyzer (ErrorReporter reporter) {
+		this.reporter = reporter;
+	}
+	
+	// Reports that the identifier or operator used at a leaf of the AST
+	// has not been declared.
+
+	public static boolean showPosition = false;
+    
+    /**
+     * print text representation of AST to stdout
+     * @param ast root node of AST 
+     */
+    public void check(AST ast){
+        ast.visit(this, "");
+    }   
+   
+	///////////////////////////////////////////////////////////////////////////////
+	//
+	// PACKAGE
+	//
+	/////////////////////////////////////////////////////////////////////////////// 
+
+    public Type visitPackage(Package prog, String arg){
+        for (ClassDecl c: prog.classDeclList){
+        	c.visit(this, "");
+        }
+        return null;
+    }
+    
+    
+	///////////////////////////////////////////////////////////////////////////////
+	//
+	// DECLARATIONS
+	//
+	///////////////////////////////////////////////////////////////////////////////
+    
+    public Type visitClassDecl(ClassDecl clas, String arg){
+    	curClass = clas.type;
+    	//populate current class: class member
+    	for (FieldDecl f: clas.fieldDeclList){
+    		f.visit(this, "");
+    		idTable.enter(f.name, f); //level 2 class member
+    	}
+        
+        //open level 3 method parameters
+        idTable.openScope();
+        for (MethodDecl m: clas.methodDeclList){
+        	m.visit(this, "");
+        }
+        idTable.closeScope();
+        return null;
+    }
+    
+    public Type visitFieldDecl(FieldDecl f, String arg){
+    	f.type.visit(this, "");
+        return null;
+    }
+    
+    public Type visitMethodDecl(MethodDecl m, String arg){
+    	m.type.visit(this, "");
+    	
+        ParameterDeclList pdl = m.parameterDeclList;
+        for (ParameterDecl pd: pdl) {
+        	pd.visit(this, "");
+        }
+        StatementList sl = m.statementList;
+        
+        //open level 4 local variable
+        idTable.openScope();
+        for (Statement s: sl) {
+            s.visit(this, "");
+        }
+        if (m.returnExp != null) {
+            m.returnExp.visit(this, "");
+        }
+        idTable.closeScope();
+        
+        return null;
+    }
+    
+    public Type visitParameterDecl(ParameterDecl pd, String arg){
+    	//populate level 3 method parameter
+    	idTable.enter(pd.name, pd);
+        pd.type.visit(this, "");
+        return null;
+    } 
+    
+    public Type visitVarDecl(VarDecl vd, String arg){ //local variable decl
+    	//populate level 4+ decl
+    	idTable.enter(vd.name, vd);
+        vd.type.visit(this, "");
+        return null;
+    }
+ 
+	
+	///////////////////////////////////////////////////////////////////////////////
+	//
+	// TYPES
+	//
+	///////////////////////////////////////////////////////////////////////////////
+    
+    public Type visitBaseType(BaseType type, String arg){
+        return null;
+    }
+    
+    public Type visitClassType(ClassType type, String arg){
+        //check if class id declared
+    	Declaration decl =  idTable.retrieveClass(type.className.spelling);
+        if(decl==null){
+        	IdentificationError("Reference to class type: " + type.className.spelling + " is not declared in "+type.posn.toString());
+        } else {
+        	type.className.decl = decl;
+        }
+        return null;
+    }
+    
+    public Type visitArrayType(ArrayType type, String arg){
+    	//check if class id declared
+    	if(type.eltType.typeKind == TypeKind.CLASS){
+    		Declaration decl =  idTable.retrieveClass(((ClassType)type.eltType).className.spelling);
+    		if(decl==null){
+            	IdentificationError("Reference to class type " + ((ClassType)type.eltType).className.spelling + " is not declared in array at"+type.posn.toString());
+            } else {
+            	((ClassType)type.eltType).className.decl = decl;
+            }
+    	}
+        return null;
+    }
+    
+	
+	///////////////////////////////////////////////////////////////////////////////
+	//
+	// STATEMENTS
+	//
+	///////////////////////////////////////////////////////////////////////////////
+
+    public Type visitBlockStmt(BlockStmt stmt, String arg){
+        StatementList sl = stmt.sl;
+        for (Statement s: sl) {
+        	s.visit(this, "");
+        }
+        return null;
+    }
+    
+    public Type visitVardeclStmt(VarDeclStmt stmt, String arg){
+        Type vType = stmt.varDecl.visit(this, "");
+        Type eType = stmt.initExp.visit(this, "");
+        if(!vType.equals(dummyErrorType) && !vType.equals(dummyUnsupportedType) && !eType.equals(dummyErrorType) && !eType.equals(dummyUnsupportedType)){
+        	if(!vType.equals(eType)){
+            	TypeCheckError("variable declaration type mismatch at "+stmt.toString());
+            }
+        }
+        return null;
+    }
+    
+    public Type visitAssignStmt(AssignStmt stmt, String arg){
+    	Type rType = stmt.ref.visit(this, "");
+        Type vType = stmt.val.visit(this, "");
+        if(!vType.equals(dummyErrorType) && !vType.equals(dummyUnsupportedType) && !rType.equals(dummyErrorType) && !rType.equals(dummyUnsupportedType)){
+        	if(!vType.equals(rType)){
+            	TypeCheckError("assignment type mismatch at "+stmt.toString());
+            }
+        }
+        return null;
+    }
+    
+    public Type visitCallStmt(CallStmt stmt, String arg){
+    	ExprList al = stmt.argList;
+        for (Expression e: al) {
+            Type eType = e.visit(this, "");
+            if(eType.equals(dummyErrorType) || eType.equals(dummyUnsupportedType)) return null;
+        }
+        Type methodType = stmt.methodRef.visit(this, "");
+        if(!methodType.equals(dummyErrorType) && !methodType.equals(dummyUnsupportedType)){
+        	MethodDecl oriDecl = (MethodDecl)stmt.methodRef.decl;
+        	if(oriDecl.parameterDeclList.size() != al.size()){
+        		TypeCheckError("call statement: "+stmt.toString()+"does not have the right number of argument");
+        	}
+        	Iterator<Expression> alIter = al.iterator();
+        	Iterator<ParameterDecl> plIter = oriDecl.parameterDeclList.iterator();
+            while (plIter.hasNext()) {
+            	Expression a = alIter.next();
+            	ParameterDecl p= plIter.next();
+                Type argType = a.visit(this, "");
+                if(!argType.equals(p.type)){
+            		TypeCheckError("argument: "+a.toString()+" of call statement: "+stmt.toString()+" does not match the type in the declaration");            		
+                }
+            }
+        }
+        return null;
+    }
+    
+    public Type visitIfStmt(IfStmt stmt, String arg){
+        Type cType = stmt.cond.visit(this, "");
+        if(!cType.equals(dummyErrorType) && !cType.equals(dummyUnsupportedType)){
+        	if(!cType.equals(dummyBooleanType)){
+        		TypeCheckError("If statement: "+stmt.toString()+" condition type not boolean");            		
+        	}
+	        stmt.thenStmt.visit(this, "");
+	        if (stmt.elseStmt != null)
+	            stmt.elseStmt.visit(this, "");
+        }
+        return null;
+    }
+    
+    public Type visitWhileStmt(WhileStmt stmt, String arg){
+        stmt.cond.visit(this, "");
+        stmt.body.visit(this, "");
+        
+        Type cType = stmt.cond.visit(this, "");
+        if(!cType.equals(dummyErrorType) && !cType.equals(dummyUnsupportedType)){
+        	if(!cType.equals(dummyBooleanType)){
+        		TypeCheckError("While statement: "+stmt.toString()+" condition type not boolean");            		
+        	}
+	        stmt.thenStmt.visit(this, "");
+	        if (stmt.elseStmt != null)
+	            stmt.elseStmt.visit(this, "");
+        }
+        return null;
+    }
+    
+
+	///////////////////////////////////////////////////////////////////////////////
+	//
+	// EXPRESSIONS
+	//
+	///////////////////////////////////////////////////////////////////////////////
+
+    public Type visitUnaryExpr(UnaryExpr expr, String arg){
+        Type ret = null;
+    	expr.operator.visit(this, "");
+        Type innerType = expr.expr.visit(this, "");
+        if(innerType.typeKind== TypeKind.UNSUPPORTED || innerType.typeKind== TypeKind.ERROR){
+        	ret = dummyErrorType; 
+        } else {
+        	switch(expr.operator.kind){
+            case OP_MINUS:
+            	if(innerType.typeKind != TypeKind.INT){
+            		ret = dummyUnsupportedType;
+            	} else {
+            		ret = innerType;
+            	}
+            	break;
+            case OP_NEGATE:
+            	if(innerType.typeKind != TypeKind.BOOLEAN){
+            		ret = dummyUnsupportedType;
+            	} else {
+            		ret = innerType;
+            	}
+            	break;
+    		default:
+    			ret = dummyUnsupportedType;
+    			break;
+            }
+        }
+        expr.astType = ret;
+        return ret;
+    }
+    
+    public Type visitBinaryExpr(BinaryExpr expr, String arg){
+    	Type ret = null;
+    	 expr.operator.visit(this, "");
+    	 Type leftType = expr.left.visit(this, "");
+    	 Type rightType = expr.right.visit(this, "");
+    	 
+         if(leftType.typeKind== TypeKind.UNSUPPORTED || leftType.typeKind== TypeKind.ERROR || rightType.typeKind== TypeKind.UNSUPPORTED || rightType.typeKind== TypeKind.ERROR){
+         	ret = dummyErrorType; 
+         } else {
+         	ret = typeCheckBinaryExpr(leftType, leftType, expr.operator);
+         }
+         expr.astType = ret;
+         return ret;
+    }
+    
+    private Type typeCheckBinaryExpr(Type leftType, Type rightType, Operator operator){
+    	Type ret = null;
+    	switch(operator.kind){
+    	case OP_PLUS:
+        	if(leftType.typeKind != TypeKind.INT || rightType.typeKind != TypeKind.INT){
+        		ret = dummyUnsupportedType;
+        	} else {
+        		ret = leftType;
+        	}
+        	break;
+        case OP_MINUS:
+        	if(leftType.typeKind != TypeKind.INT || rightType.typeKind != TypeKind.INT){
+        		ret = dummyUnsupportedType;
+        	} else {
+        		ret = leftType;
+        	}
+        	break;
+        case OP_TIMES:
+        	if(leftType.typeKind != TypeKind.INT || rightType.typeKind != TypeKind.INT){
+        		ret = dummyUnsupportedType;
+        	} else {
+        		ret = leftType;
+        	}
+        	break;
+        case OP_DIVIDE:
+        	if(leftType.typeKind != TypeKind.INT || rightType.typeKind != TypeKind.INT){
+        		ret = dummyUnsupportedType;
+        	} else {
+        		ret = leftType;
+        	}
+        	break;
+        case OP_AND:
+        	if(leftType.typeKind != TypeKind.BOOLEAN || rightType.typeKind != TypeKind.BOOLEAN){
+        		ret = dummyUnsupportedType;
+        	} else {
+        		ret = leftType;
+        	}
+        	break;
+        case OP_OR:
+        	if(leftType.typeKind != TypeKind.BOOLEAN || rightType.typeKind != TypeKind.BOOLEAN){
+        		ret = dummyUnsupportedType;
+        	} else {
+        		ret = leftType;
+        	}
+        	break;
+        case OP_EQ:
+        	if(leftType.typeKind != rightType.typeKind){
+        		ret = dummyUnsupportedType;
+        	} else {
+        		ret = dummyBooleanType;
+        	}
+        	break;
+        case OP_NEQ:
+        	if(leftType.typeKind != rightType.typeKind){
+        		ret = dummyUnsupportedType;
+        	} else {
+        		ret = dummyBooleanType;
+        	}
+        	break;
+        case OP_GT:
+        	if(leftType.typeKind != rightType.typeKind){
+        		ret = dummyUnsupportedType;
+        	} else {
+        		ret = dummyBooleanType;
+        	}
+        	break;
+        case OP_GTE:
+        	if(leftType.typeKind != rightType.typeKind){
+        		ret = dummyUnsupportedType;
+        	} else {
+        		ret = dummyBooleanType;
+        	}
+        	break;
+        case OP_LT:
+        	if(leftType.typeKind != rightType.typeKind){
+        		ret = dummyUnsupportedType;
+        	} else {
+        		ret = dummyBooleanType;
+        	}
+        	break;
+        case OP_LTE:
+        	if(leftType.typeKind != rightType.typeKind){
+        		ret = dummyUnsupportedType;
+        	} else {
+        		ret = dummyBooleanType;
+        	}
+        	break;
+		default:
+			ret = dummyUnsupportedType;
+			break;
+        }
+    	return ret;
+    }
+    
+    public Type visitRefExpr(RefExpr expr, String arg){
+        
+        Type ret = null;
+        Type innerType = expr.ref.visit(this, "");
+   	 
+        if(innerType.typeKind== TypeKind.UNSUPPORTED || innerType.typeKind== TypeKind.ERROR){
+        	ret = dummyErrorType; 
+        } else {
+        	ret = innerType;
+        }
+        expr.astType = ret;
+        return ret;
+    }
+    
+    public Type visitCallExpr(CallExpr expr, String arg){
+    	Type ret = null;
+        Type funcType = expr.functionRef.visit(this, "");
+        if(funcType.typeKind== TypeKind.UNSUPPORTED || funcType.typeKind== TypeKind.ERROR){
+        	ret = dummyErrorType; 
+        } else {
+        	ret = funcType;
+        	ExprList al = expr.argList;
+        	MethodDecl oriDecl = (MethodDecl)expr.functionRef.decl;
+        	if(oriDecl.parameterDeclList.size() != al.size()){
+        		ret = dummyUnsupportedType;
+        		TypeCheckError("function call: "+expr.toString()+"does not have the right number of argument");
+        	}
+        	Iterator<Expression> alIter = al.iterator();
+        	Iterator<ParameterDecl> plIter = oriDecl.parameterDeclList.iterator();
+            while (plIter.hasNext()) {
+            	Expression a = alIter.next();
+            	ParameterDecl p= plIter.next();
+                Type argType = a.visit(this, "");
+                if(!argType.equals(p.type)){
+                	ret = dummyErrorType;
+            		TypeCheckError("argument: "+a.toString()+" of function call: "+expr.toString()+" does not match the type in the declaration");            		
+                }
+            }
+        }
+        expr.astType = ret;
+        return ret;
+    }
+    
+    public Type visitLiteralExpr(LiteralExpr expr, String arg){
+    	Type ret = null;
+        Type litType = expr.lit.visit(this, "");
+        if(litType.typeKind== TypeKind.UNSUPPORTED || litType.typeKind== TypeKind.ERROR){
+        	ret = dummyErrorType; 
+        } else {
+        	ret = litType;
+        }
+        expr.astType = ret;
+        return ret;
+    }
+ 
+    public Type visitNewArrayExpr(NewArrayExpr expr, String arg){
+    	Type ret = null;
+    	Type sizeType = expr.sizeExpr.visit(this, "");
+    	if(sizeType.typeKind== TypeKind.UNSUPPORTED || sizeType.typeKind== TypeKind.ERROR){
+        	ret = dummyErrorType; 
+        } else {
+        	Type arrayType = expr.eltType;
+        	if(sizeType.typeKind !=TypeKind.INT){
+        		ret = dummyErrorType;
+        		TypeCheckError("Array expression: "+expr.toString()+"has unsupported el");            		
+        	} else {
+        		ret = arrayType;
+        	}
+        }
+    	expr.astType = ret;
+        return ret;
+    }
+    
+    public Type visitNewObjectExpr(NewObjectExpr expr, String arg){
+    	Type ret = null;
+    	Type classType = expr.classtype;
+    	ret = classType;
+        expr.astType = ret;
+        return ret;
+    }
+    
+
+	///////////////////////////////////////////////////////////////////////////////
+	//
+	// REFERENCES
+	//
+	///////////////////////////////////////////////////////////////////////////////
+	
+    //ALL REFERENCE VISITOR RETURN ITS OWN CONTEXT: StaticClass, InstanceClass, ThisClass
+    public Type visitQualifiedRef(QualifiedRef qr, String arg) {
+    	Type ret = null;
+    	Type innerType = qr.id.visit(this, "");
+        if(innerType.typeKind== TypeKind.UNSUPPORTED || innerType.typeKind== TypeKind.ERROR){
+        	ret = dummyErrorType; 
+        } 
+        qr.astType = ret;
+        return ret;
+    }
+    
+    public Type visitIndexedRef(IndexedRef ir, String arg) {
+    	Type ret = null;
+    	Type exprType = ir.indexExpr.visit(this, "");
+    	Type refType = ir.ref.visit(this, "");
+    	if(exprType.typeKind== TypeKind.UNSUPPORTED || exprType.typeKind== TypeKind.ERROR || refType.typeKind== TypeKind.UNSUPPORTED || refType.typeKind== TypeKind.ERROR){
+        	ret = dummyErrorType; 
+        } else if(exprType.typeKind != TypeKind.INT){
+        	ret = dummyErrorType;
+    		TypeCheckError("Expression within index reference: "+ir.toString()+" does not serive INT");
+        } else {
+        	ret = refType;
+        }
+    	ir.astType = ret;
+        return ret;
+    }
+    
+    public Type visitIdRef(IdRef ref, String arg) {
+    	Type ret = null;
+    	Type idType = ref.id.visit(this, "");
+    	if(idType.typeKind== TypeKind.UNSUPPORTED || idType.typeKind== TypeKind.ERROR){
+        	ret = dummyErrorType; 
+        } else {
+        	ret = idType;
+        }
+    	ref.astType = ret;
+        return ret;
+    }
+   
+    public Type visitThisRef(ThisRef ref, String arg) {
+    	return curClass;
+    }
+    
+    
+	///////////////////////////////////////////////////////////////////////////////
+	//
+	// TERMINALS
+	//
+	///////////////////////////////////////////////////////////////////////////////
+    
+    
+    //arg is the name of the class if the identifier is a class member
+    public Type visitIdentifier(Identifier id, String arg){
+    	return id.decl.type;
+    }
+    
+    public Type visitOperator(Operator op, String arg){
+        return null;
+    }
+    
+    public Type visitIntLiteral(IntLiteral num, String arg){
+        return dummyIntType;
+    }
+    
+    public Type visitBooleanLiteral(BooleanLiteral bool, String arg){
+        return dummyBooleanType;
+    }
+    
+	///////////////////////////////////////////////////////////////////////////////
+	//
+	// DISPLAY ERROR
+	//
+	///////////////////////////////////////////////////////////////////////////////
+
+    private void TypeCheckError(String e) {
+		reporter.reportError("***Type Check error: " + e);
+	}
+}

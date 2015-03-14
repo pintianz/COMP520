@@ -2,22 +2,27 @@
 <section name="Workbench">
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
 		<item value="false" key="isRegEx"/>
-		<item value="Reference to id" key="selection"/>
+		<item value="CallS" key="selection"/>
 		<item value="false" key="casesensitive"/>
 		<item value="false" key="incremental"/>
 		<item value="true" key="wrap"/>
 		<item value="false" key="wholeword"/>
 		<list key="findhistory">
-			<item value="Reference to id"/>
-			<item value="Reference to class member"/>
-			<item value="swit"/>
-			<item value="system"/>
-			<item value="switch"/>
-			<item value="is not declared in"/>
-			<item value="enterClass"/>
-			<item value="para"/>
+			<item value="calls"/>
+			<item value="VarDeclStmt"/>
+			<item value=".eq"/>
+			<item value="!="/>
+			<item value="typeKind.equals"/>
+			<item value="== TypeKind.ERROR"/>
+			<item value="== TypeKind.UNSUPPORTED"/>
+			<item value="=="/>
 		</list>
 		<list key="replacehistory">
+			<item value="equals"/>
+			<item value=".equals(dummyErrorType)"/>
+			<item value=".equals(dummyUnsupportedType)"/>
+			<item value="public Type"/>
+			<item value="Type"/>
 			<item value="&quot;&quot;"/>
 			<item value="id"/>
 		</list>

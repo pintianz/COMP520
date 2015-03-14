@@ -399,6 +399,6 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
 	///////////////////////////////////////////////////////////////////////////////
 
     private void IdentificationError(String e) {
-		reporter.reportError("Idenficiation error: " + e);
+		reporter.reportError("***Idenficiation error: " + e);
 	}
 }

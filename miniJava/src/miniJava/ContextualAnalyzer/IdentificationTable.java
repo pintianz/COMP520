@@ -177,6 +177,6 @@ public class IdentificationTable {
   }
   
 	private void IdentificationErrorDeclaration(String e) {
-		errorReporter.reportError("Idenficiation error - declaration: " + e);
+		errorReporter.reportError("***Idenficiation error - declaration: " + e);
 	}
 }

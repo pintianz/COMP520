@@ -16,6 +16,10 @@ abstract public class Type extends AST {
     
     public TypeKind typeKind;
     
+    public boolean equals(Type type){
+    	return type.typeKind == typeKind;
+    }
+    
 }
 
         

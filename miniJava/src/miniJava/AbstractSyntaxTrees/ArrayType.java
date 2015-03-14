@@ -18,6 +18,11 @@ public class ArrayType extends Type {
 	    public <A,R> R visit(Visitor<A,R> v, A o) {
 	        return v.visitArrayType(this, o);
 	    }
+	    
+	    @Override
+	    public boolean equals(Type type){
+	    	return (super.equals(type) && eltType.equals(((ArrayType)type).eltType));
+	    }
 
 	    public Type eltType;
 	}

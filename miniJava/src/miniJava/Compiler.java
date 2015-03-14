@@ -23,6 +23,7 @@ import java.io.InputStream;
 import miniJava.AbstractSyntaxTrees.ASTDisplay;
 import miniJava.AbstractSyntaxTrees.AST;
 import miniJava.ContextualAnalyzer.IdentificationAnalyzer;
+import miniJava.ContextualAnalyzer.TypeCheckAnalyzer;
 import miniJava.SyntacticAnalyzer.Parser;
 import miniJava.SyntacticAnalyzer.Scanner;
 import miniJava.SyntacticAnalyzer.SourceFile;
@@ -70,6 +71,7 @@ public class Compiler {
 		Scanner scanner = new Scanner(sourceFile, reporter);
 		Parser parser = new Parser(scanner, reporter);
 		IdentificationAnalyzer idenAnalyzer = new IdentificationAnalyzer(reporter);
+		TypeCheckAnalyzer typeCheckAnalyzer = new TypeCheckAnalyzer(reporter);
 		
 		//generate Implicit Import AST
 		SourceFile sourceFileII = null;
@@ -93,8 +95,11 @@ public class Compiler {
 			System.out.println(" - Syntactic analysis PASSED");
 		}
 		System.out.println("");
+		
+		
 		System.out.println("Contexual analysis ... ");
 		idenAnalyzer.check(ast, astII);
+		typeCheckAnalyzer.check(ast);
 		System.out.println("Contexual analysis complete:  ");
 		
 		if (reporter.hasErrors()) {

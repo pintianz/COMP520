@@ -18,5 +18,10 @@ public class ClassType extends Type
         return v.visitClassType(this, o);
     }
 
+    @Override
+    public boolean equals(Type type){
+    	return (super.equals(type) && className.spelling.equals(((ClassType)type).className.spelling));
+    }
+    
     public Identifier className;
 }

@@ -389,6 +389,7 @@ public class Parser {
 			while(token.kind != TokenKind.RCURLYBRACKET){
 				sl.add(parseStatement());
 			}
+			finish(statementPos);
 			acceptIt();
 			statement = new BlockStmt(sl, statementPos);
 			break;
@@ -401,6 +402,7 @@ public class Parser {
 			acceptIt();
 			accept(TokenKind.LPAREN);
 			ifCond = parseExpression();
+			finish(statementPos);
 			accept(TokenKind.RPAREN);
 			thenStmt = parseStatement();
 			if(token.kind == TokenKind.KW_ELSE) {
@@ -418,6 +420,7 @@ public class Parser {
 			accept(TokenKind.LPAREN);
 			whileCond = parseExpression();
 			accept(TokenKind.RPAREN);
+			finish(statementPos);
 			whileBody = parseStatement();
 			statement = new WhileStmt(whileCond, whileBody, statementPos);
 			break;
@@ -437,6 +440,7 @@ public class Parser {
 			accept(TokenKind.OP_EQUAL);
 			initExpBool = parseExpression();
 			accept(TokenKind.SEMICOLON);
+			finish(statementPos);
 			statement = new VarDeclStmt(varDeclBool, initExpBool, statementPos);
 			
 			break;
@@ -450,9 +454,11 @@ public class Parser {
 			typeInt = parseType(); //Type id = Expression ';'  
 			varDeclInt = new VarDecl(typeInt, token.spelling, verDeclIntPos);
 			accept(TokenKind.ID);
+			finish(verDeclIntPos);
 			accept(TokenKind.OP_EQUAL);
 			initExpInt = parseExpression();
 			accept(TokenKind.SEMICOLON);
+			finish(statementPos);
 			statement = new VarDeclStmt(varDeclInt, initExpInt, statementPos);
 			break;
 			
@@ -475,11 +481,13 @@ public class Parser {
 				}
 				accept(TokenKind.RPAREN);
 				accept(TokenKind.SEMICOLON);
+				finish(statementPos);
 				statement = new CallStmt(refThis, callListThis, statementPos);
 			} else { 
 				accept(TokenKind.OP_EQUAL);
 				assignExpThis = parseExpression();
 				accept(TokenKind.SEMICOLON);
+				finish(statementPos);
 				statement = new AssignStmt(refThis, assignExpThis, statementPos);
 			}
 			break;
@@ -503,6 +511,7 @@ public class Parser {
 				accept(TokenKind.OP_EQUAL);
 				initExpId = parseExpression();
 				accept(TokenKind.SEMICOLON);
+				finish(statementPos);
 				statement = new VarDeclStmt(varDeclId, initExpId, statementPos);
 				
 			} else if(token.kind == TokenKind.LSQRBRACKET){
@@ -516,6 +525,7 @@ public class Parser {
 					accept(TokenKind.OP_EQUAL);
 					initExpId = parseExpression();
 					accept(TokenKind.SEMICOLON);
+					finish(statementPos);
 					statement = new VarDeclStmt(varDeclId, initExpId, statementPos);
 					
 				} else { // ID[Expression] = expression | (argList?)
@@ -530,12 +540,14 @@ public class Parser {
 						}
 						accept(TokenKind.RPAREN);
 						accept(TokenKind.SEMICOLON);
+						finish(statementPos);
 						statement = new CallStmt(idxRef, callStmtIDExprList, statementPos);
 						
 					} else {  //assignStmt
 						accept(TokenKind.OP_EQUAL);
 						initExpId = parseExpression();
 						accept(TokenKind.SEMICOLON);
+						finish(statementPos);
 						statement = new AssignStmt(idxRef, initExpId, statementPos);
 					}
 				}
@@ -548,6 +560,7 @@ public class Parser {
 						callStmtIDExprList = parseArgumentList();
 					}
 					accept(TokenKind.RPAREN);
+					finish(statementPos);
 					accept(TokenKind.SEMICOLON);
 					
 					statement = new CallStmt(idRef, callStmtIDExprList, statementPos);
@@ -555,6 +568,7 @@ public class Parser {
 				} else {  //assignStmt
 					accept(TokenKind.OP_EQUAL);
 					initExpId = parseExpression();
+					finish(statementPos);
 					accept(TokenKind.SEMICOLON);
 					statement = new AssignStmt(idRef, initExpId, statementPos);
 				}
@@ -563,9 +577,9 @@ public class Parser {
 			break;
 		default:
 			parseError("Invalid Term - expecting '{', this, ID, int, Boolean, if, while but got: " + token.kind);
+			finish(statementPos);
 			break;
 		}
-		finish(statementPos);
 		return statement;
 		
 	}

@@ -16,4 +16,8 @@ public class BaseType extends Type
     public <A,R> R visit(Visitor<A,R> v, A o) {
         return v.visitBaseType(this, o);
     }
+    @Override
+    public boolean equals(Type type){
+    	return super.equals(type);
+    }
 }
