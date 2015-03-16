@@ -19,4 +19,10 @@ public class RefExpr extends Expression
     }
 
     public Reference ref;
+
+	@Override
+	public String getName() {
+		// TODO Auto-generated method stub
+		return ref.getName();
+	}
 }

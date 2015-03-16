@@ -1,0 +1,3 @@
+class System { public static _PrintStreamm out; }
+class _PrintStreamm { public void println(int n){} }
+class String { }

@@ -13,4 +13,7 @@ public abstract class Statement extends AST {
     super (posn);
   }
 
+	public String getPos(){
+		  return posn.toString();
+	  }
 }

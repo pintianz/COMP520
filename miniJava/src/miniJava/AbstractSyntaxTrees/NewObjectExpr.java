@@ -19,4 +19,10 @@ public class NewObjectExpr extends NewExpr
     }
     
     public ClassType classtype;
+
+	@Override
+	public String getName() {
+		// TODO Auto-generated method stub
+		return "new "+classtype.typeKind.toString();
+	}
 }

@@ -5,7 +5,6 @@
  */
 package miniJava.AbstractSyntaxTrees;
 
-import miniJava.AbstractSyntaxTrees.AST;
 import miniJava.SyntacticAnalyzer.Token;
 
 public class Identifier extends Terminal {

@@ -21,4 +21,12 @@ public class IndexedRef extends Reference {
 	
 	public Reference ref;
 	public Expression indexExpr;
+	
+	@Override
+	public String getName() {
+		// TODO Auto-generated method stub
+		return ref.getName();
+	}
+	
+	
 }

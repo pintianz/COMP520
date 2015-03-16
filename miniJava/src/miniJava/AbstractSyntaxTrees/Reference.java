@@ -15,4 +15,8 @@ public abstract class Reference extends AST
 	}
 	public Declaration decl; // Either a Declaration or a FieldTypeDenoter
 
+	public abstract String getName();
+	public String getNamePos(){
+		  return getName() + posn.toString();
+	  }
 }

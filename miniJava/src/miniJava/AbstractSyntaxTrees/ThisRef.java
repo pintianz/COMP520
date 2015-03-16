@@ -17,5 +17,11 @@ public class ThisRef extends Reference {
 	public <A, R> R visit(Visitor<A, R> v, A o) {
 		return v.visitThisRef(this, o);
 	}
+
+	@Override
+	public String getName() {
+		// TODO Auto-generated method stub
+		return "this";
+	}
 	
 }

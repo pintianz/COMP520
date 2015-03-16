@@ -22,4 +22,9 @@ public class QualifiedRef extends Reference {
 
 	public Reference ref;
 	public Identifier id;
+	@Override
+	public String getName() {
+		// TODO Auto-generated method stub
+		return id.spelling;
+	}
 }

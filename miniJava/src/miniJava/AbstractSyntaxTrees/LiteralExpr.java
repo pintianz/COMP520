@@ -19,4 +19,10 @@ public class LiteralExpr extends Expression
     }
 
     public Terminal lit;
+
+	@Override
+	public String getName() {
+		// TODO Auto-generated method stub
+		return lit.spelling;
+	}
 }

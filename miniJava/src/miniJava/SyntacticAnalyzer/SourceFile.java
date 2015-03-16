@@ -61,6 +61,22 @@ public class SourceFile {
 			return '~';
 		}
 	}
+  
+  String sourcePeekStr(int len) {
+	  source.mark(len+5);
+		char c;
+		String s = "";
+		try {
+			for(int i=0; i< len; i++){
+				c = (char)source.read();
+				s = s+c;
+			}
+			source.reset();
+			return s;
+		} catch (IOException e) {
+			return "";
+		}
+	}
 
   int getCurrentLine() {
     return currentLine;

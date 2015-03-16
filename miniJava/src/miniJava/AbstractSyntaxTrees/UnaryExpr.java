@@ -21,4 +21,9 @@ public class UnaryExpr extends Expression
 
     public Operator operator;
     public Expression expr;
+	@Override
+	public String getName() {
+		// TODO Auto-generated method stub
+		return operator.spelling+expr.getName();
+	}
 }

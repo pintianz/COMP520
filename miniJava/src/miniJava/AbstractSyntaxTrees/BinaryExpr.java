@@ -23,4 +23,9 @@ public class BinaryExpr extends Expression
     public Operator operator;
     public Expression left;
     public Expression right;
+	@Override
+	public String getName() {
+		// TODO Auto-generated method stub
+		return left.getName()+operator.spelling+right.getName();
+	}
 }

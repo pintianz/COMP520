@@ -68,7 +68,7 @@ public class Compiler {
 
 		SourceFile sourceFile = new SourceFile(inputStream);
 		ErrorReporter reporter = new ErrorReporter();
-		Scanner scanner = new Scanner(sourceFile, reporter);
+		Scanner scanner = new Scanner(sourceFile, reporter, false);
 		Parser parser = new Parser(scanner, reporter);
 		IdentificationAnalyzer idenAnalyzer = new IdentificationAnalyzer(reporter);
 		TypeCheckAnalyzer typeCheckAnalyzer = new TypeCheckAnalyzer(reporter);
@@ -80,7 +80,7 @@ public class Compiler {
 		} catch (FileNotFoundException e) {
 			System.out.println("Implicit Import file not found");
 		}
-		Scanner scannerII = new Scanner(sourceFileII, reporter);
+		Scanner scannerII = new Scanner(sourceFileII, reporter,true);
 		Parser parserII = new Parser(scannerII, reporter);
 		AST astII = parserII.parse();
 		

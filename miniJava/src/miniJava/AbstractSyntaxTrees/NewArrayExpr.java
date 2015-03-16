@@ -21,4 +21,9 @@ public class NewArrayExpr extends NewExpr
 
     public Type eltType;
     public Expression sizeExpr;
+	@Override
+	public String getName() {
+		// TODO Auto-generated method stub
+		return "new "+eltType.typeKind.toString();
+	}
 }

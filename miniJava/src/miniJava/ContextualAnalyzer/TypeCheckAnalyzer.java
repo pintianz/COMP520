@@ -141,7 +141,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         Type eType = stmt.initExp.visit(this, "");
         if(!eType.equals(dummyErrorType) && !eType.equals(dummyUnsupportedType)){
         	if(!stmt.varDecl.type.equals(eType)){
-            	TypeCheckError("variable declaration type mismatch at "+stmt.toString());
+            	TypeCheckError("variable declaration type mismatch at vardecl statement "+stmt.getPos());
             }
         }
         return null;
@@ -152,7 +152,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         Type vType = stmt.val.visit(this, "");
         if(!vType.equals(dummyErrorType) && !vType.equals(dummyUnsupportedType) && !rType.equals(dummyErrorType) && !rType.equals(dummyUnsupportedType)){
         	if(!vType.equals(rType)){
-            	TypeCheckError("assignment type mismatch at "+stmt.toString());
+            	TypeCheckError("assignment type mismatch at "+stmt.getPos());
             }
         }
         return null;
@@ -168,7 +168,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         if(!methodType.equals(dummyErrorType) && !methodType.equals(dummyUnsupportedType)){
         	MethodDecl oriDecl = (MethodDecl)stmt.methodRef.decl;
         	if(oriDecl.parameterDeclList.size() != al.size()){
-        		TypeCheckError("call statement: "+stmt.toString()+"does not have the right number of argument");
+        		TypeCheckError("call statement at "+stmt.getPos()+"does not have the right number of argument");
         	} else {
 	        	Iterator<Expression> alIter = al.iterator();
 	        	Iterator<ParameterDecl> plIter = oriDecl.parameterDeclList.iterator();
@@ -177,7 +177,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
 	            	ParameterDecl p= plIter.next();
 	                Type argType = a.visit(this, "");
 	                if(!argType.equals(p.type)){
-	            		TypeCheckError("argument: "+a.toString()+" of call statement: "+stmt.toString()+" does not match the type in the declaration");            		
+	            		TypeCheckError("argument: "+a.getNamePos()+" of call statement at "+stmt.getPos()+" does not match the type in the declaration");            		
 	                }
 	            }
         	}
@@ -189,7 +189,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         Type cType = stmt.cond.visit(this, "");
         if(!cType.equals(dummyErrorType) && !cType.equals(dummyUnsupportedType)){
         	if(!cType.equals(dummyBooleanType)){
-        		TypeCheckError("If statement: "+stmt.toString()+" condition type not boolean");            		
+        		TypeCheckError("If statement at "+stmt.getPos()+" condition type not boolean");            		
         	}
 	        stmt.thenStmt.visit(this, "");
 	        if (stmt.elseStmt != null)
@@ -202,7 +202,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         Type cType = stmt.cond.visit(this, "");
         if(!cType.equals(dummyErrorType) && !cType.equals(dummyUnsupportedType)){
         	if(!cType.equals(dummyBooleanType)){
-        		TypeCheckError("While statement: "+stmt.toString()+" condition type not boolean");            		
+        		TypeCheckError("While statement at "+stmt.getPos()+" condition type not boolean");            		
         	}
 	        stmt.body.visit(this, "");
         }
@@ -226,7 +226,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	switch(expr.operator.kind){
             case OP_MINUS:
             	if(!innerType.equals(dummyIntType)){
-            		TypeCheckError("Did not find type int at numerical negate unary expression: "+expr.toString());
+            		TypeCheckError("Did not find type int at numerical negate unary expression: "+expr.getNamePos());
             		ret = dummyUnsupportedType;
             	} else {
             		ret = innerType;
@@ -234,7 +234,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
             	break;
             case OP_NEGATE:
             	if(!innerType.equals(dummyBooleanType)){
-            		TypeCheckError("Did not find type boolean at logical negate  unary expression: "+expr.toString());
+            		TypeCheckError("Did not find type boolean at logical negate  unary expression: "+expr.getNamePos());
             		ret = dummyUnsupportedType;
             	} else {
             		ret = innerType;
@@ -270,7 +270,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
     	switch(operator.kind){
     	case OP_PLUS:
     		if(!leftType.equals(dummyIntType) || !rightType.equals(dummyIntType)){
-        		TypeCheckError("Type mismatch at ADDITION binary expression: "+expr.toString()+" need 2 int expressions");
+        		TypeCheckError("Type mismatch at ADDITION binary expression: "+expr.getNamePos()+" need 2 int expressions");
         		ret = dummyUnsupportedType;
         	} else {
         		ret = leftType;
@@ -278,7 +278,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	break;
         case OP_MINUS:
         	if(!leftType.equals(dummyIntType) || !rightType.equals(dummyIntType)){
-        		TypeCheckError("Type mismatch at SUBTRACTION binary expression: "+expr.toString()+" need 2 int expressions");
+        		TypeCheckError("Type mismatch at SUBTRACTION binary expression: "+expr.getNamePos()+" need 2 int expressions");
         		ret = dummyUnsupportedType;
         	} else {
         		ret = leftType;
@@ -286,7 +286,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	break;
         case OP_TIMES:
         	if(!leftType.equals(dummyIntType) || !rightType.equals(dummyIntType)){
-        		TypeCheckError("Type mismatch at MULTIPLICATION binary expression: "+expr.toString()+" need 2 int expressions");
+        		TypeCheckError("Type mismatch at MULTIPLICATION binary expression: "+expr.getNamePos()+" need 2 int expressions");
         		ret = dummyUnsupportedType;
         	} else {
         		ret = leftType;
@@ -294,7 +294,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	break;
         case OP_DIVIDE:
         	if(!leftType.equals(dummyIntType) || !rightType.equals(dummyIntType)){
-        		TypeCheckError("Type mismatch at DIVISION binary expression: "+expr.toString()+" need 2 int expressions");
+        		TypeCheckError("Type mismatch at DIVISION binary expression: "+expr.getNamePos()+" need 2 int expressions");
         		ret = dummyUnsupportedType;
         	} else {
         		ret = leftType;
@@ -302,7 +302,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	break;
         case OP_AND:
         	if(!leftType.equals(dummyBooleanType) || !rightType.equals(dummyBooleanType)){
-        		TypeCheckError("Type mismatch at AND binary expression: "+expr.toString()+" need 2 boolean expressions");
+        		TypeCheckError("Type mismatch at AND binary expression: "+expr.getNamePos()+" need 2 boolean expressions");
         		ret = dummyUnsupportedType;
         	} else {
         		ret = leftType;
@@ -310,7 +310,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	break;
         case OP_OR:
         	if(!leftType.equals(dummyBooleanType) || !rightType.equals(dummyBooleanType)){
-        		TypeCheckError("Type mismatch at OR binary expression: "+expr.toString()+" need 2 boolean expressions");
+        		TypeCheckError("Type mismatch at OR binary expression: "+expr.getNamePos()+" need 2 boolean expressions");
         		ret = dummyUnsupportedType;
         	} else {
         		ret = leftType;
@@ -318,7 +318,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	break;
         case OP_EQ:
         	if(!leftType.equals(rightType)){
-        		TypeCheckError("Type mismatch at EQ binary expression: "+expr.toString());
+        		TypeCheckError("Type mismatch at EQ binary expression: "+expr.getNamePos());
         		ret = dummyUnsupportedType;
         	} else {
         		ret = dummyBooleanType;
@@ -326,7 +326,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	break;
         case OP_NEQ:
         	if(!leftType.equals(rightType)){
-        		TypeCheckError("Type mismatch at NEQ binary expression: "+expr.toString());
+        		TypeCheckError("Type mismatch at NEQ binary expression: "+expr.getNamePos());
         		ret = dummyUnsupportedType;
         	} else {
         		ret = dummyBooleanType;
@@ -334,7 +334,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	break;
         case OP_GT:
         	if(!leftType.equals(rightType)){
-        		TypeCheckError("Type mismatch at GT binary expression: "+expr.toString());
+        		TypeCheckError("Type mismatch at GT binary expression: "+expr.getNamePos());
         		ret = dummyUnsupportedType;
         	} else {
         		ret = dummyBooleanType;
@@ -342,7 +342,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	break;
         case OP_GTE:
         	if(!leftType.equals(rightType)){
-        		TypeCheckError("Type mismatch at GTE binary expression: "+expr.toString());
+        		TypeCheckError("Type mismatch at GTE binary expression: "+expr.getNamePos());
         		ret = dummyUnsupportedType;
         	} else {
         		ret = dummyBooleanType;
@@ -350,7 +350,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	break;
         case OP_LT:
         	if(!leftType.equals(rightType)){
-        		TypeCheckError("Type mismatch at LT binary expression: "+expr.toString());
+        		TypeCheckError("Type mismatch at LT binary expression: "+expr.getNamePos());
         		ret = dummyUnsupportedType;
         	} else {
         		ret = dummyBooleanType;
@@ -358,14 +358,14 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	break;
         case OP_LTE:
         	if(!leftType.equals(rightType)){
-        		TypeCheckError("Type mismatch at LTE binary expression: "+expr.toString());
+        		TypeCheckError("Type mismatch at LTE binary expression: "+expr.getNamePos());
         		ret = dummyUnsupportedType;
         	} else {
         		ret = dummyBooleanType;
         	}
         	break;
 		default:
-			TypeCheckError("unsupported binary expression opertor at: "+expr.toString());
+			TypeCheckError("unsupported binary expression opertor at: "+expr.getNamePos());
     		ret = dummyUnsupportedType;
 			break;
         }
@@ -397,7 +397,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	MethodDecl oriDecl = (MethodDecl)expr.functionRef.decl;
         	if(oriDecl.parameterDeclList.size() != al.size()){
         		ret = dummyUnsupportedType;
-        		TypeCheckError("function call: "+expr.toString()+"does not have the right number of argument");
+        		TypeCheckError("function call: "+expr.getNamePos()+"does not have the right number of argument");
         	}
         	Iterator<Expression> alIter = al.iterator();
         	Iterator<ParameterDecl> plIter = oriDecl.parameterDeclList.iterator();
@@ -407,7 +407,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
                 Type argType = a.visit(this, "");
                 if(!argType.equals(p.type)){
                 	ret = dummyErrorType;
-            		TypeCheckError("argument: "+a.toString()+" of function call: "+expr.toString()+" does not match the type in the declaration");            		
+            		TypeCheckError("argument: "+a.getNamePos()+" of function call: "+expr.getNamePos()+" does not match the type in the declaration");            		
                 }
             }
         }
@@ -436,7 +436,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	Type arrayType = expr.eltType;
         	if(!sizeType.typeKind.equals(dummyIntType)){
         		ret = dummyErrorType;
-        		TypeCheckError("Array: "+expr.toString()+"needs int size expression");            		
+        		TypeCheckError("Array: "+expr.getNamePos()+"needs int size expression");            		
         	} else {
         		ret = arrayType;
         	}
@@ -481,7 +481,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	ret = dummyErrorType; 
         } else if(!exprType.equals(dummyIntType)){
         	ret = dummyErrorType;
-    		TypeCheckError("Expression within index reference: "+ir.toString()+" does not derive INT");
+    		TypeCheckError("Expression within index reference: "+ir.getNamePos()+" does not derive INT");
         } else {
         	ret = refType;
         }

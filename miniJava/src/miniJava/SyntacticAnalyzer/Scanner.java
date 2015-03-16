@@ -32,13 +32,15 @@ public class Scanner{
 	//private char currentChar;
 	private int curCharInt;
 	private StringBuilder currentSpelling;
+	private boolean incorporatePredefined;
 	
 	private final static char eolUnix = '\n';
 	private final static char eolWindows = '\r';
 
-	public Scanner(SourceFile source, ErrorReporter reporter) {
+	public Scanner(SourceFile source, ErrorReporter reporter, boolean incorporatePredefined) {
 		this.source = source;
 		this.reporter = reporter;
+		this.incorporatePredefined = incorporatePredefined;
 
 		// initialize scanner state
 		readChar();
@@ -239,11 +241,29 @@ public class Scanner{
 			}
 			return(TokenKind.ID);
 
+		case '_':
+			if(incorporatePredefined && checkPreDefinedKW()){
+				while (isDigit(getCurChar()) || isLetter(getCurChar()) || getCurChar()=='_'){
+					takeIt();
+				}
+				return(TokenKind.ID);
+			} 
 		default:
 			if(getCurCharInt() == -1) return(TokenKind.EOT); //EOT
 			scanError("Unrecognized character '" + getCurChar() + "' in input");
 			return(TokenKind.ERROR);
 		}
+	}
+	
+	private boolean checkPreDefinedKW(){
+		if((getCurChar()+peekCharStr(11)).equals("_PrintStream")){
+			if(peekCharStr(12).charAt(11) == '_' || isDigit(peekCharStr(12).charAt(11)) || isLetter(peekCharStr(12).charAt(11))){
+				return false;
+			} else {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private void takeIt() {
@@ -318,6 +338,9 @@ public class Scanner{
 	}
 	private char peekChar() {
 		return source.sourcePeek();
+	}
+	private String peekCharStr(int len) {
+		return source.sourcePeekStr(len);
 	}
 	
 	private int getCurCharInt() {

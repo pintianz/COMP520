@@ -19,4 +19,10 @@ public class IdRef extends Reference {
 	}
 
 	public Identifier id;
+
+	@Override
+	public String getName() {
+		// TODO Auto-generated method stub
+		return id.spelling;
+	}
 }

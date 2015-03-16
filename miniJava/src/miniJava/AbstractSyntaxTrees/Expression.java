@@ -12,5 +12,8 @@ public abstract class Expression extends AST {
   public Expression(SourcePosition posn) {
     super (posn);
   }
-  
+  public abstract String getName();
+  public String getNamePos(){
+	  return getName() + posn.toString();
+  }
 }
