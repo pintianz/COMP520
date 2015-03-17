@@ -21,7 +21,7 @@ public class VarDeclStmt extends Statement
     
     @Override
     public boolean isVarDeclStmt(){
-    	return true;
+    	return truel
     }
 
     public VarDecl varDecl;

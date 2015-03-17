@@ -223,7 +223,7 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     
     public Object visitIfStmt(IfStmt stmt, String arg){
         if(stmt.thenStmt.isVarDeclStmt() || (stmt.elseStmt != null && stmt.thenStmt.isVarDeclStmt())){
-        	IdentificationError("Cannot have a solidary varDecl Stmt within if statment branches at " + stmt.getPos());
+        	IdentificationError("Unable to access class member " + qr.id.spelling + " at "+qr.id.posn.toString() + " from class "+ qr.ref.decl.name +" because it is not static");
         } else {
     	
 	    	stmt.cond.visit(this, "");

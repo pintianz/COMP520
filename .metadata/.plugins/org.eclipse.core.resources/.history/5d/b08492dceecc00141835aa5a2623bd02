@@ -10,7 +10,6 @@ class id {
     	boolean x =  IDid.zz;
     	int a = zz+1;
     	System.out.println(x);
-    	if(true)int x = 1;
     }
 }
 class IDid {

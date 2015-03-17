@@ -16,7 +16,4 @@ public abstract class Statement extends AST {
 	public String getPos(){
 		  return posn.toString();
 	  }
-	public boolean isVarDeclStmt(){
-		return false;
-	}
 }

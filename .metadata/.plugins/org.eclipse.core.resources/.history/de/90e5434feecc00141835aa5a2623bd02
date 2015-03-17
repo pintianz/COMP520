@@ -18,11 +18,6 @@ public class VarDeclStmt extends Statement
     public <A,R> R visit(Visitor<A,R> v, A o) {
         return v.visitVardeclStmt(this, o);
     }
-    
-    @Override
-    public boolean isVarDeclStmt(){
-    	return true;
-    }
 
     public VarDecl varDecl;
     public Expression initExp;

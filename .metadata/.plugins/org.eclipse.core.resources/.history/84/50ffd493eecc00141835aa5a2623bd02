@@ -222,15 +222,10 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     }
     
     public Object visitIfStmt(IfStmt stmt, String arg){
-        if(stmt.thenStmt.isVarDeclStmt() || (stmt.elseStmt != null && stmt.thenStmt.isVarDeclStmt())){
-        	IdentificationError("Cannot have a solidary varDecl Stmt within if statment branches at " + stmt.getPos());
-        } else {
-    	
-	    	stmt.cond.visit(this, "");
-	        stmt.thenStmt.visit(this, "");
-	        if (stmt.elseStmt != null)
-	            stmt.elseStmt.visit(this, "");
-        }
+        stmt.cond.visit(this, "");
+        stmt.thenStmt.visit(this, "");
+        if (stmt.elseStmt != null)
+            stmt.elseStmt.visit(this, "");
         return null;
     }
     
