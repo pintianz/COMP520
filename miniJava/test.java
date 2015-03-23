@@ -9,7 +9,7 @@ class id {
     	//boolean x =  ii.zz;
     	boolean x =  IDid.zz;
     	int a = zz+1;
-    	System.out.println(x);
+    	System.out.println(a);
     	if(true)int x = 1;
     }
 }

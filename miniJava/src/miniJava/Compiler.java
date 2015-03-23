@@ -16,9 +16,12 @@
 
 package miniJava;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.net.URL;
 
 import miniJava.AbstractSyntaxTrees.ASTDisplay;
 import miniJava.AbstractSyntaxTrees.AST;
@@ -75,11 +78,10 @@ public class Compiler {
 		
 		//generate Implicit Import AST
 		SourceFile sourceFileII = null;
-		try {
-			sourceFileII = new SourceFile(new FileInputStream(implicitImport));
-		} catch (FileNotFoundException e) {
-			System.out.println("Implicit Import file not found");
-		}
+		Compiler c = new Compiler();
+		sourceFileII = c.getImplicitImport(implicitImport);
+		if(sourceFileII == null) System.exit(4);
+		
 		Scanner scannerII = new Scanner(sourceFileII, reporter,true);
 		Parser parserII = new Parser(scannerII, reporter);
 		AST astII = parserII.parse();
@@ -110,6 +112,19 @@ public class Compiler {
 		}
 		
 		System.exit(0);
+	}
+	
+	SourceFile getImplicitImport(String s){
+		SourceFile sourceFileII = null;
+		try {
+			URL resource = this.getClass().getResource(s);
+			File file = new File(resource.toURI());
+			FileInputStream input = new FileInputStream(file);
+			sourceFileII = new SourceFile(input);
+		} catch (FileNotFoundException | URISyntaxException | NullPointerException e2) {
+			System.out.println("Implicit Import file not found");
+		}
+		return sourceFileII;
 	}
 }
 
