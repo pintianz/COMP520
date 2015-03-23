@@ -2,12 +2,13 @@
 <section name="Workbench">
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
 		<item value="false" key="isRegEx"/>
-		<item value="CallS" key="selection"/>
+		<item value="ASTDisplay" key="selection"/>
 		<item value="false" key="casesensitive"/>
 		<item value="false" key="incremental"/>
 		<item value="true" key="wrap"/>
 		<item value="false" key="wholeword"/>
 		<list key="findhistory">
+			<item value="ASTDisplay"/>
 			<item value="calls"/>
 			<item value="VarDeclStmt"/>
 			<item value=".eq"/>
@@ -15,7 +16,6 @@
 			<item value="typeKind.equals"/>
 			<item value="== TypeKind.ERROR"/>
 			<item value="== TypeKind.UNSUPPORTED"/>
-			<item value="=="/>
 		</list>
 		<list key="replacehistory">
 			<item value="equals"/>
