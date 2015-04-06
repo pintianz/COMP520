@@ -241,7 +241,7 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
         stmt.varDecl.visit(this, "");
         //flag the variable being declared to prevent access while initializing the variable
         idTable.setBeingDeclared(stmt.varDecl.name);
-        stmt.initExp.visit(this, "");
+        stmt.initExp.visit(this, "checkNotStaticClassName");
         idTable.removeBeingDeclared(stmt.varDecl.name);
         return null;
     }
@@ -256,7 +256,7 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     }
     
     public Object visitCallStmt(CallStmt stmt, String arg){
-        stmt.methodRef.visit(this, "");
+        stmt.methodRef.visit(this, "checkFunction");
         ExprList al = stmt.argList;
         for (Expression e: al) {
             e.visit(this, "");
@@ -309,7 +309,7 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     }
     
     public Object visitRefExpr(RefExpr expr, String arg){
-        expr.ref.visit(this, "");
+        expr.ref.visit(this, arg);
         return null;
     }
     
@@ -352,7 +352,7 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     	//visit reference to obtain context
     	surroundingContext = (RefContext)qr.ref.visit(this, "");
     	if(qr.ref.decl != null){
-    		if(!(qr.ref.decl.type instanceof ClassType)){
+    		if(qr.ref.decl.type instanceof BaseType || qr.ref.decl.type instanceof ArrayType){
     			IdentificationError("qualification of reference " + qr.id.spelling + " at "+qr.id.posn.toString() + " is not referenced from a class instance");
     		} else{
 		    	switch(surroundingContext){
@@ -370,7 +370,8 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
 		    		case InstanceClass:
 		    			qr.id.visit(this, ((ClassType)qr.ref.decl.type).className.spelling);
 		    			if(qr.id.decl != null){
-			    			if(qr.id.decl.checkPrivate()){
+		    				ClassDecl cd = (ClassDecl)idTable.retrieveClass(qr.ref.decl.name);
+			    			if(qr.id.decl.checkPrivate() && !curClass.name.equals(((ClassType)qr.ref.decl.type).className.spelling)){
 			    				IdentificationError("Unable to access class member " + qr.id.spelling + " at "+qr.id.posn.toString() + " from class "+ qr.ref.decl.name +" because it is private");
 			    			}
 		    			}
@@ -407,12 +408,21 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     public Object visitIdRef(IdRef ref, String arg) {
     	ref.id.visit(this, "");
     	ref.decl = ref.id.decl;
-    	if(inStaticMethod && !ref.id.decl.checkStatic()){
-    		IdentificationError("cannot reference non-static symbol "+ ref.id.spelling +" in static context at" + ref.id.posn.toString());
-		}
+//    	if(inStaticMethod && !ref.id.decl.checkStatic()){
+//    		IdentificationError("cannot reference non-static symbol "+ ref.id.spelling +" in static context at" + ref.id.posn.toString());
+//		}
     	Declaration tempClass = idTable.retrieveClass(ref.id.spelling);
-    	if(tempClass!= null && tempClass==ref.id.decl) return RefContext.StaticClass;
-    	return RefContext.InstanceClass;
+    	if(tempClass!= null && tempClass==ref.id.decl){
+    		if(arg.equals("checkNotStaticClassName")){
+    			IdentificationError("Incomplete reference to "+ ref.id.spelling +" in variable declaration at" + ref.id.posn.toString());
+    		}
+    		return RefContext.StaticClass;
+    	} else{
+    		if(inStaticMethod && !ref.id.decl.checkStatic()){
+        		IdentificationError("cannot reference non-static symbol "+ ref.id.spelling +" in static context at" + ref.id.posn.toString());
+    		}
+    		return RefContext.InstanceClass;
+    	}
     }
    
     public Object visitThisRef(ThisRef ref, String arg) {

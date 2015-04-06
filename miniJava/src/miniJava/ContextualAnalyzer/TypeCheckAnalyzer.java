@@ -23,6 +23,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
 	private static Type dummyBooleanType = new BaseType(TypeKind.BOOLEAN,dummyPos);
 	private static Type dummyIntType = new BaseType(TypeKind.INT,dummyPos);
 	private static Type dummyVoidType = new BaseType(TypeKind.VOID,dummyPos);
+	private static Type dummyArrayIntType = new ArrayType(dummyIntType,dummyPos);
 	
 	private Type curClass;
 	
@@ -447,11 +448,11 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	ret = dummyErrorType; 
         } else {
         	Type arrayType = expr.eltType;
-        	if(!sizeType.typeKind.equals(dummyIntType)){
+        	if(!sizeType.equals(dummyIntType)){
         		ret = dummyErrorType;
         		TypeCheckError("Array: "+expr.getNamePos()+"needs int size expression");            		
         	} else {
-        		ret = arrayType;
+        		ret = dummyArrayIntType;
         	}
         }
     	expr.astType = ret;
@@ -496,7 +497,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	ret = dummyErrorType;
     		TypeCheckError("Expression within index reference: "+ir.getNamePos()+" does not derive INT");
         } else {
-        	ret = refType;
+        	ret = ((ArrayType)refType).eltType;
         }
     	ir.astType = ret;
         return ret;
