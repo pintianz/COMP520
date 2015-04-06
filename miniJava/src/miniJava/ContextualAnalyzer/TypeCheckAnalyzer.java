@@ -8,6 +8,8 @@ package miniJava.ContextualAnalyzer;
 import java.util.Iterator;
 
 import miniJava.SyntacticAnalyzer.SourcePosition;
+import miniJava.SyntacticAnalyzer.Token;
+import miniJava.SyntacticAnalyzer.TokenKind;
 import miniJava.ErrorReporter;
 import miniJava.AbstractSyntaxTrees.*;
 import miniJava.AbstractSyntaxTrees.Package;
@@ -65,7 +67,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
 	///////////////////////////////////////////////////////////////////////////////
     
     public Type visitClassDecl(ClassDecl clas, String arg){
-    	curClass = clas.type;
+    	curClass = new ClassType(new Identifier(new Token(TokenKind.ID, clas.name, dummyPos)), dummyPos);
         for (MethodDecl m: clas.methodDeclList){
         	m.visit(this, "");
         }
@@ -96,7 +98,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	if (m.returnExp == null) {
         		TypeCheckError("Return expr value missing in "+m.name+" at "+m.posn.toString());
         	} else {
-        		if(!m.type.equals(m.returnExp.visit(this, ""))){
+        		if(m.returnExp.visit(this, "")!=null && !m.type.equals(m.returnExp.visit(this, ""))){
         			TypeCheckError("Return expression value does not match method declaration in "+m.name+" at "+m.returnExp.posn.toString());
         		}
         	}
@@ -391,7 +393,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         Type ret = null;
         Type innerType = expr.ref.visit(this, "");
    	 
-        if(innerType.equals(dummyUnsupportedType) || innerType.equals(dummyErrorType)){
+        if(innerType != null && (innerType.equals(dummyUnsupportedType) || innerType.equals(dummyErrorType))){
         	ret = dummyErrorType; 
         } else {
         	ret = innerType;
