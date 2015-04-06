@@ -18,5 +18,6 @@ public abstract class Reference extends AST
 	public abstract String getName();
 	public String getNamePos(){
 		  return getName() + posn.toString();
-	  }
+	}
+	public abstract boolean assignable();
 }

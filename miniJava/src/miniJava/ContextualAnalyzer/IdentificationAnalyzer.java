@@ -7,6 +7,7 @@ package miniJava.ContextualAnalyzer;
 
 import miniJava.ErrorReporter;
 import miniJava.ContextualAnalyzer.IdentificationTable;
+import miniJava.SyntacticAnalyzer.SourcePosition;
 import miniJava.AbstractSyntaxTrees.*;
 import miniJava.AbstractSyntaxTrees.Package;
 /*
@@ -18,6 +19,11 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
 	private ErrorReporter reporter;
 	private Declaration curClass;
 	private AST astII; //implicit import ASK root
+	
+	private boolean inStaticMethod;
+
+	private static SourcePosition dummyPos = new SourcePosition();
+	private static Type dummyVoidType = new BaseType(TypeKind.VOID,dummyPos);
 	
 	public IdentificationAnalyzer (ErrorReporter reporter) {
 		this.reporter = reporter;
@@ -70,6 +76,32 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
         	}
         }
         
+        //check for suitable mian class
+        Boolean mainClassFound = false;
+        for (ClassDecl c: prog.classDeclList){
+        	Declaration potentialMain = idTable.retrieveMember(c.name, "main");
+        	if(potentialMain != null){
+        		if(potentialMain.checkStatic()==true && potentialMain.checkPrivate()==false&&potentialMain.type.equals(dummyVoidType)){
+        			if(potentialMain instanceof MethodDecl){
+        				ParameterDeclList pl = ((MethodDecl)potentialMain).parameterDeclList;
+        				if(pl.size()==1 && pl.get(0).type.typeKind == TypeKind.ARRAY){
+        					ArrayType at = (ArrayType)pl.get(0).type;
+        					if(at.eltType.typeKind == TypeKind.CLASS && ((ClassType)at.eltType).className.spelling.equals("String")){
+        						if(mainClassFound){
+        							IdentificationError("Deplicate main class found at "+c.posn.toString());
+        						}
+        						mainClassFound = true;
+        					}
+        				}
+        			}
+        		}
+        	}
+        }
+        
+        if(!mainClassFound){
+        	IdentificationError("Suitable main class not found");
+        }
+        
         for (ClassDecl c: prog.classDeclList){
         	//open level 2 class member
         	idTable.openScope();
@@ -93,13 +125,16 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     		f.visit(this, "");
     		idTable.enter(f.name, f); //level 2 class member
     	}
+    	for (MethodDecl m: clas.methodDeclList){
+    		idTable.enter(m.name, m); //level 2 class member
+    	}
         
         //open level 3 method parameters
-        idTable.openScope();
         for (MethodDecl m: clas.methodDeclList){
+        	idTable.openScope();
         	m.visit(this, "");
+        	idTable.closeScope();
         }
-        idTable.closeScope();
         return null;
     }
     
@@ -109,6 +144,8 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     }
     
     public Object visitMethodDecl(MethodDecl m, String arg){
+    	inStaticMethod = m.checkStatic();
+    	
     	m.type.visit(this, "");
     	
         ParameterDeclList pdl = m.parameterDeclList;
@@ -139,6 +176,9 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     
     public Object visitVarDecl(VarDecl vd, String arg){ //local variable decl
     	//populate level 4+ decl
+    	if(inStaticMethod){
+    		vd.isStatic=true;
+    	}
     	idTable.enter(vd.name, vd);
         vd.type.visit(this, "");
         return null;
@@ -208,6 +248,9 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     
     public Object visitAssignStmt(AssignStmt stmt, String arg){
         stmt.ref.visit(this, "");
+        if(stmt.ref.decl instanceof MethodDecl){
+        	IdentificationError("Assign to method declaration at" + stmt.getPos());
+        }
         stmt.val.visit(this, "");
         return null;
     }
@@ -222,10 +265,11 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     }
     
     public Object visitIfStmt(IfStmt stmt, String arg){
-        if(stmt.thenStmt.isVarDeclStmt() || (stmt.elseStmt != null && stmt.thenStmt.isVarDeclStmt())){
-        	IdentificationError("Cannot have a solidary varDecl Stmt within if statment branches at " + stmt.getPos());
+        if(stmt.thenStmt.isVarDeclStmt()){
+        	IdentificationError("Cannot have a solidary varDecl Stmt within if statment branches at " + stmt.thenStmt.getPos());
+        } else if(stmt.elseStmt != null && stmt.elseStmt.isVarDeclStmt()){
+        	IdentificationError("Cannot have a solidary varDecl Stmt within if statment branches at " + stmt.elseStmt.getPos());
         } else {
-    	
 	    	stmt.cond.visit(this, "");
 	        stmt.thenStmt.visit(this, "");
 	        if (stmt.elseStmt != null)
@@ -235,8 +279,12 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     }
     
     public Object visitWhileStmt(WhileStmt stmt, String arg){
-        stmt.cond.visit(this, "");
-        stmt.body.visit(this, "");
+    	if(stmt.body.isVarDeclStmt()){
+        	IdentificationError("Cannot have a solidary varDecl Stmt within while statment branches at " + stmt.body.getPos());
+        } else {
+	        stmt.cond.visit(this, "");
+	        stmt.body.visit(this, "");
+        }
         return null;
     }
     
@@ -266,7 +314,7 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     }
     
     public Object visitCallExpr(CallExpr expr, String arg){
-        expr.functionRef.visit(this, "");
+        expr.functionRef.visit(this, "checkFunction");
         ExprList al = expr.argList;
         for (Expression e: al) {
             e.visit(this, "");
@@ -304,33 +352,46 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     	//visit reference to obtain context
     	surroundingContext = (RefContext)qr.ref.visit(this, "");
     	if(qr.ref.decl != null){
-	    	switch(surroundingContext){
-	    		case StaticClass:
-	    			qr.id.visit(this, qr.ref.decl.name);
-	    			if(qr.id.decl != null){
-	    				if(!qr.id.decl.checkStatic()){
-	        				IdentificationError("Unable to access class member " + qr.id.spelling + " at "+qr.id.posn.toString() + " from class "+ qr.ref.decl.name +" because it is not static");
-	        			}
-	        			if(qr.id.decl.checkPrivate()){
-	        				IdentificationError("Unable to access class member " + qr.id.spelling + " at "+qr.id.posn.toString() + " from class "+ qr.ref.decl.name +" because it is private");
-	        			}
-	    			}
-	    			break;
-	    		case InstanceClass:
-	    			qr.id.visit(this, ((ClassType)qr.ref.decl.type).className.spelling);
-	    			if(qr.id.decl != null){
-		    			if(qr.id.decl.checkPrivate()){
-		    				IdentificationError("Unable to access class member " + qr.id.spelling + " at "+qr.id.posn.toString() + " from class "+ qr.ref.decl.name +" because it is private");
+    		if(!(qr.ref.decl.type instanceof ClassType)){
+    			IdentificationError("qualification of reference " + qr.id.spelling + " at "+qr.id.posn.toString() + " is not referenced from a class instance");
+    		} else{
+		    	switch(surroundingContext){
+		    		case StaticClass:
+		    			qr.id.visit(this, qr.ref.decl.name);
+		    			if(qr.id.decl != null){
+		    				if(!qr.id.decl.checkStatic()){
+		        				IdentificationError("Unable to access class member " + qr.id.spelling + " at "+qr.id.posn.toString() + " from class "+ qr.ref.decl.name +" because it is not static");
+		        			}
+		        			if(qr.id.decl.checkPrivate()){
+		        				IdentificationError("Unable to access class member " + qr.id.spelling + " at "+qr.id.posn.toString() + " from class "+ qr.ref.decl.name +" because it is private");
+		        			}
 		    			}
-	    			}
-	    			break;
-	    		case ThisClass:
-	    			qr.id.visit(this, ((ClassDecl)curClass).name);
-	    			break;
-	    		default: //this class
-	    			IdentificationError("Unknown case reached while analyzing qualified reference " + qr.id.spelling + " at "+qr.id.posn.toString() + " from class "+ qr.ref.decl.name);
-	    			break;
-	    	}
+		    			break;
+		    		case InstanceClass:
+		    			qr.id.visit(this, ((ClassType)qr.ref.decl.type).className.spelling);
+		    			if(qr.id.decl != null){
+			    			if(qr.id.decl.checkPrivate()){
+			    				IdentificationError("Unable to access class member " + qr.id.spelling + " at "+qr.id.posn.toString() + " from class "+ qr.ref.decl.name +" because it is private");
+			    			}
+		    			}
+		    			break;
+		    		case ThisClass:
+		    			qr.id.visit(this, ((ClassDecl)curClass).name);
+		    			break;
+		    		default: //this class
+		    			IdentificationError("Unknown case reached while analyzing qualified reference " + qr.id.spelling + " at "+qr.id.posn.toString() + " from class "+ qr.ref.decl.name);
+		    			break;
+		    	}
+		    	if(arg.equals("checkFunction")){
+		    		if(!(qr.id.decl instanceof MethodDecl)){
+		    			IdentificationError("reference " + qr.id.spelling + " at "+qr.id.posn.toString() + " is not a method");
+		    		}
+		    	} else {
+		    		if((qr.id.decl instanceof MethodDecl)){
+		    			IdentificationError("method reference " + qr.id.spelling + " at "+qr.id.posn.toString() + " without an invocation");
+		    		}
+		    	}
+    		}
     	}
     	qr.decl = qr.id.decl;
 	    return RefContext.InstanceClass;
@@ -346,6 +407,9 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     public Object visitIdRef(IdRef ref, String arg) {
     	ref.id.visit(this, "");
     	ref.decl = ref.id.decl;
+    	if(inStaticMethod && !ref.id.decl.checkStatic()){
+    		IdentificationError("cannot reference non-static symbol "+ ref.id.spelling +" in static context at" + ref.id.posn.toString());
+		}
     	Declaration tempClass = idTable.retrieveClass(ref.id.spelling);
     	if(tempClass!= null && tempClass==ref.id.decl) return RefContext.StaticClass;
     	return RefContext.InstanceClass;

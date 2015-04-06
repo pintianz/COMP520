@@ -8,12 +8,15 @@ package miniJava.AbstractSyntaxTrees;
 import miniJava.SyntacticAnalyzer.SourcePosition;
 
 public class VarDecl extends LocalDecl {
-	
+	public boolean isStatic = false;
 	public VarDecl(Type t, String name, SourcePosition posn) {
 		super(name, t, posn);
 	}
 	
 	public <A,R> R visit(Visitor<A,R> v, A o) {
 		return v.visitVarDecl(this, o);
+	}
+	public boolean checkStatic(){
+		  return isStatic;
 	}
 }

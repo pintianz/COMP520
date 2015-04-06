@@ -22,6 +22,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
 	private static Type dummyUnsupportedType = new BaseType(TypeKind.UNSUPPORTED,dummyPos);
 	private static Type dummyBooleanType = new BaseType(TypeKind.BOOLEAN,dummyPos);
 	private static Type dummyIntType = new BaseType(TypeKind.INT,dummyPos);
+	private static Type dummyVoidType = new BaseType(TypeKind.VOID,dummyPos);
 	
 	private Type curClass;
 	
@@ -86,8 +87,18 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         for (Statement s: sl) {
             s.visit(this, "");
         }
-        if (m.returnExp != null) {
-            m.returnExp.visit(this, "");
+        if(m.type.equals(dummyVoidType)){
+        	if (m.returnExp != null){
+            	TypeCheckError("Cannot return value in void method "+m.name+" at "+m.returnExp.posn.toString());
+        	}
+        } else {
+        	if (m.returnExp == null) {
+        		TypeCheckError("Return expr value missing in "+m.name+" at "+m.posn.toString());
+        	} else {
+        		if(!m.type.equals(m.returnExp.visit(this, ""))){
+        			TypeCheckError("Return expression value does not match method declaration in "+m.name+" at "+m.returnExp.posn.toString());
+        		}
+        	}
         }
         
         return null;
@@ -259,7 +270,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
          if(leftType.equals(dummyUnsupportedType) || leftType.equals(dummyErrorType) || rightType.equals(dummyUnsupportedType) || rightType.equals(dummyErrorType)){
          	ret = dummyErrorType; 
          } else {
-         	ret = typeCheckBinaryExpr(expr, leftType, leftType, expr.operator);
+         	ret = typeCheckBinaryExpr(expr, leftType, rightType, expr.operator);
          }
          expr.astType = ret;
          return ret;
@@ -333,7 +344,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	}
         	break;
         case OP_GT:
-        	if(!leftType.equals(rightType)){
+        	if(!leftType.equals(dummyIntType) || !rightType.equals(dummyIntType)){
         		TypeCheckError("Type mismatch at GT binary expression: "+expr.getNamePos());
         		ret = dummyUnsupportedType;
         	} else {
@@ -341,7 +352,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	}
         	break;
         case OP_GTE:
-        	if(!leftType.equals(rightType)){
+        	if(!leftType.equals(dummyIntType) || !rightType.equals(dummyIntType)){
         		TypeCheckError("Type mismatch at GTE binary expression: "+expr.getNamePos());
         		ret = dummyUnsupportedType;
         	} else {
@@ -349,15 +360,17 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	}
         	break;
         case OP_LT:
-        	if(!leftType.equals(rightType)){
+        	if(!leftType.equals(dummyIntType) || !rightType.equals(dummyIntType)){
+        		System.out.println("THEN");
         		TypeCheckError("Type mismatch at LT binary expression: "+expr.getNamePos());
         		ret = dummyUnsupportedType;
         	} else {
+        		System.out.println("ELSE");
         		ret = dummyBooleanType;
         	}
         	break;
         case OP_LTE:
-        	if(!leftType.equals(rightType)){
+        	if(!leftType.equals(dummyIntType) || !rightType.equals(dummyIntType)){
         		TypeCheckError("Type mismatch at LTE binary expression: "+expr.getNamePos());
         		ret = dummyUnsupportedType;
         	} else {

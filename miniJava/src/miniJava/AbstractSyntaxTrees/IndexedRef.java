@@ -27,6 +27,11 @@ public class IndexedRef extends Reference {
 		// TODO Auto-generated method stub
 		return ref.getName();
 	}
+
+	@Override
+	public boolean assignable() {
+		return true;
+	}
 	
 	
 }

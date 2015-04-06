@@ -23,5 +23,10 @@ public class ThisRef extends Reference {
 		// TODO Auto-generated method stub
 		return "this";
 	}
+
+	@Override
+	public boolean assignable() {
+		return false;
+	}
 	
 }

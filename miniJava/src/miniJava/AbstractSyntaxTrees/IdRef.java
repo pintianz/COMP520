@@ -25,4 +25,9 @@ public class IdRef extends Reference {
 		// TODO Auto-generated method stub
 		return id.spelling;
 	}
+
+	@Override
+	public boolean assignable() {
+		return true;
+	}
 }

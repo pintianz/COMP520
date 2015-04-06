@@ -27,4 +27,10 @@ public class QualifiedRef extends Reference {
 		// TODO Auto-generated method stub
 		return id.spelling;
 	}
+
+	@Override
+	public boolean assignable() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }

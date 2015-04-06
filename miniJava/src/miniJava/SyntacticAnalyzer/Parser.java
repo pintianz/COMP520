@@ -167,6 +167,9 @@ public class Parser {
 			if(token.kind == TokenKind.SEMICOLON){ //field Decl
 				acceptIt();
 				finish(declPos);
+				if(mbd.type.typeKind == TypeKind.VOID){
+					parseError("Cannot delcare void type in fieldDecl");
+				}
 				fd = new FieldDecl(mbd, declPos);
 				fdl.add(fd);
 			} else {
