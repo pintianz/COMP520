@@ -24,6 +24,7 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
 
 	private static SourcePosition dummyPos = new SourcePosition();
 	private static Type dummyVoidType = new BaseType(TypeKind.VOID,dummyPos);
+	private static Type dummyIntType = new BaseType(TypeKind.INT,dummyPos);
 	
 	public IdentificationAnalyzer (ErrorReporter reporter) {
 		this.reporter = reporter;
@@ -190,6 +191,10 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
 	// TYPES
 	//
 	///////////////////////////////////////////////////////////////////////////////
+    public Object visitNullType(NullType type, String arg) {
+		// TODO Auto-generated method stub
+		return null;
+	}
     
     public Object visitBaseType(BaseType type, String arg){
         return null;
@@ -352,9 +357,15 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     	//visit reference to obtain context
     	surroundingContext = (RefContext)qr.ref.visit(this, "");
     	if(qr.ref.decl != null){
-    		if(qr.ref.decl.type instanceof BaseType || qr.ref.decl.type instanceof ArrayType){
+    		if(qr.ref.decl.type instanceof BaseType){
     			IdentificationError("qualification of reference " + qr.id.spelling + " at "+qr.id.posn.toString() + " is not referenced from a class instance");
-    		} else{
+    		} else if(qr.ref.decl.type instanceof ArrayType){
+    			if(!qr.id.spelling.equals("length")){
+        			IdentificationError("Unable to access array member " + qr.id.spelling + " at "+qr.id.posn.toString() + ", only length is accessible");
+    			}
+    			qr.id.decl = new FieldDecl(false, false, dummyIntType, "length", dummyPos);
+    			return RefContext.ArrayLength;
+    		}else{
 		    	switch(surroundingContext){
 		    		case StaticClass:
 		    			qr.id.visit(this, qr.ref.decl.name);
@@ -379,6 +390,9 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
 		    		case ThisClass:
 		    			qr.id.visit(this, ((ClassDecl)curClass).name);
 		    			break;
+		    		case ArrayLength:
+		        		IdentificationError(qr.id.spelling + " at "+qr.id.posn.toString() + " cannot be accessed or derived from array.length field");
+		    			return RefContext.ArrayLength;
 		    		default: //this class
 		    			IdentificationError("Unknown case reached while analyzing qualified reference " + qr.id.spelling + " at "+qr.id.posn.toString() + " from class "+ qr.ref.decl.name);
 		    			break;
@@ -437,6 +451,10 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
 	//
 	///////////////////////////////////////////////////////////////////////////////
     
+	public Object visitNullLiteral(NullLiteral nl, String arg) {
+		// TODO Auto-generated method stub
+		return null;
+	}
     
     //arg is the name of the class if the identifier is a class member
     public Object visitIdentifier(Identifier id, String arg){

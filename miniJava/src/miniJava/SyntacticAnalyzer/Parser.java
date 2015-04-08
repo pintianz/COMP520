@@ -2,29 +2,29 @@
  * Parser
  *
  * Grammar:
- *   Program  ::=  (ClassDeclaration)* eot
- *   ClassDeclaration  ::=  'class' id '{' (DeclarationHead)* '}'
+ *   Programï¿½ï¿½::=ï¿½ï¿½(ClassDeclaration)* eot
+ *   ClassDeclarationï¿½ï¿½::=ï¿½ï¿½'class' id '{'ï¿½(DeclarationHead)*ï¿½'}'
  *   DeclarationHead ::= Declarators id (MethodDeclarationTail|';')
  *   MethodDeclarationTail ::= '('ParameterList? ')' '{' Statement* ('return' Expression ';')? '}'
- *   Declarators  ::= ('public' | 'private')?   'static'?   (Type | 'void')
- *   Type  ::= 'boolean'  |  (id | 'int')  ('[' ']')?
- *   ParameterList  ::=  Type id (',' Type id)*
- *   ArgumentList  ::=  Expression (',' Expression)*
- *   Reference  ::=  ('this' | id)(.id)* 
- *   IxReferenceTail  ::=  ( '[' Expression ']' )?
- *   Statement  ::=    
- *   '{' Statement* '}' 
- *   |  Type id = Expression ';'
- *   |  Reference ( '(' ArgumentList? ')' ';' | IxReferenceTail =  Expression ';' )
- *   |  'if' ( Expression )  Statement  ('else'  Statement)?  
- *   |  'while' ( Expression )  Statement  
- *   Expression  ::=   
- *   |  Reference ( ( '(' ArgumentList? ')') | IxReferenceTail)
- *   |  unop Expression
- *   |  Expression binop Expression
- *   |  '(' Expression ')'
- *   |  num | 'true'  |  'false'
- *   |  'new'  ( id '('')' | 'int' '[' Expression ']'  |  id '[' Expression ']' )
+ *   Declaratorsï¿½ï¿½::= ('public' | 'private')?ï¿½ï¿½ï¿½'static'?ï¿½ï¿½ï¿½(Type | 'void')
+ *   Typeï¿½ï¿½::= 'boolean'ï¿½ï¿½|ï¿½ï¿½(id | 'int') ï¿½('[' ']')?
+ *   ParameterListï¿½ï¿½::=ï¿½ï¿½Type id (',' Type id)*
+ *   ArgumentListï¿½ï¿½::=ï¿½ï¿½Expression (',' Expression)*
+ *   Referenceï¿½ï¿½::=ï¿½ï¿½('this' | id)(.id)* 
+ *   IxReferenceTailï¿½ï¿½::=ï¿½ï¿½( '[' Expression ']' )?
+ *   Statementï¿½ï¿½::=ï¿½ï¿½ï¿½ï¿½
+ *   '{' Statement* '}'ï¿½
+ *   |ï¿½ï¿½Type id = Expression ';'
+ *   |ï¿½ï¿½Reference ( '(' ArgumentList? ')' ';' | IxReferenceTail =ï¿½ï¿½Expression ';'ï¿½)
+ *   |ï¿½ï¿½'if' ( Expression )ï¿½ï¿½Statementï¿½ï¿½('else'ï¿½ï¿½Statement)?ï¿½ï¿½
+ *   |ï¿½ï¿½'while' ( Expression )ï¿½ï¿½Statementï¿½ï¿½
+ *   Expressionï¿½ï¿½::=ï¿½ï¿½ï¿½
+ *   |ï¿½ï¿½Reference ( ( '(' ArgumentList? ')') | IxReferenceTail)
+ *   |ï¿½ï¿½unop Expression
+ *   |ï¿½ï¿½Expression binop Expression
+ *   |ï¿½ï¿½'(' Expression ')'
+ *   |ï¿½ï¿½num | 'true'ï¿½ï¿½|ï¿½ï¿½'false'
+ *   |ï¿½ï¿½'new'ï¿½ï¿½( id '('')' | 'int' '[' Expression ']'ï¿½ï¿½|ï¿½ï¿½id '[' Expression ']' )
  */
 package miniJava.SyntacticAnalyzer;
 
@@ -127,7 +127,7 @@ public class Parser {
 	  
 	
 	
-	//    Program  ::=  (ClassDeclaration)* eot
+	//    Programï¿½ï¿½::=ï¿½ï¿½(ClassDeclaration)* eot
 	private Package parsePackage() throws SyntaxError {
 		Package packageAST = null;
 		ClassDeclList classDeclList = new ClassDeclList();
@@ -139,7 +139,7 @@ public class Parser {
 		return packageAST;
 	}
 	
-	//  ClassDeclaration  ::=  'class' id '{' (DeclarationHead)* '}'
+	//  ClassDeclarationï¿½ï¿½::=ï¿½ï¿½'class' id '{'ï¿½(DeclarationHead)*ï¿½'}'
 	private ClassDecl parseClassDeclaration() throws SyntaxError {
 		ClassDecl classDeclAST = null; // in case there's a syntactic error
 	    SourcePosition classDeclPos = new SourcePosition();
@@ -216,7 +216,7 @@ public class Parser {
 		return methodDeclAST;
 	}
 	
-	// Declarators  ::= ('public' | 'private')?   'static'?   (Type | 'void')
+	// Declaratorsï¿½ï¿½::= ('public' | 'private')?ï¿½ï¿½ï¿½'static'?ï¿½ï¿½ï¿½(Type | 'void')
 	private MemberDecl parseDeclarators() throws SyntaxError {
 		MemberDecl memberDeclAST = null; // in case there's a syntactic error
 	    SourcePosition memberDeclPos = new SourcePosition();
@@ -246,7 +246,7 @@ public class Parser {
 		return memberDeclAST;
 	}
 	
-	// Type  ::= 'boolean'  |  (id | 'int')  ('[' ']')?
+	// Typeï¿½ï¿½::= 'boolean'ï¿½ï¿½|ï¿½ï¿½(id | 'int') ï¿½('[' ']')?
 	private Type parseType() throws SyntaxError {
 		Type typeAST=null;
 		SourcePosition typePos = new SourcePosition();
@@ -295,7 +295,7 @@ public class Parser {
 		return idAST;
 	}
 	
-	// ParameterList  ::=  Type id (',' Type id)*
+	// ParameterListï¿½ï¿½::=ï¿½ï¿½Type id (',' Type id)*
 	private ParameterDeclList parseParameterList() throws SyntaxError {
 		ParameterDeclList parameterListAST= new ParameterDeclList();
 		ParameterDecl parameterDecl;
@@ -327,7 +327,7 @@ public class Parser {
 		return parameterListAST;
 	}
 	
-	// ArgumentList  ::=  Expression (',' Expression)*
+	// ArgumentListï¿½ï¿½::=ï¿½ï¿½Expression (',' Expression)*
 	private ExprList parseArgumentList() throws SyntaxError {
 		ExprList exprListAST = new ExprList();
 		
@@ -340,7 +340,7 @@ public class Parser {
 		return exprListAST;
 	}
 	
-	// Reference  ::=  ('this' | id)(.id)* 
+	// Referenceï¿½ï¿½::=ï¿½ï¿½('this' | id)(.id)* 
 	private Reference parseReferenceTail(Reference ref) throws SyntaxError {
 		Reference retRef = ref;
 		SourcePosition qRefPos = new SourcePosition();
@@ -356,7 +356,7 @@ public class Parser {
 		return retRef;
 	}
 	
-	// IxReferenceTail  ::=  ( '[' Expression ']' )?
+	// IxReferenceTailï¿½ï¿½::=ï¿½ï¿½( '[' Expression ']' )?
 	private Reference parseIxReferenceTail(Reference ref) throws SyntaxError {
 		Reference retRef = ref;
 		SourcePosition ixRefPos = new SourcePosition();
@@ -373,12 +373,12 @@ public class Parser {
 	}
 	
 	
-	/* Statement  ::=    
-	 *   '{' Statement* '}' 
-	 *   |  Type id = Expression ';'
-	 *   |  Reference ( '(' ArgumentList? ')' ';' | IxReferenceTail =  Expression ';' )
-	 *   |  'if' ( Expression )  Statement  ('else'  Statement)?  
-	 *   |  'while' ( Expression )  Statement  
+	/* Statementï¿½ï¿½::=ï¿½ï¿½ï¿½ï¿½
+	 *   '{' Statement* '}'ï¿½
+	 *   |ï¿½ï¿½Type id = Expression ';'
+	 *   |ï¿½ï¿½Reference ( '(' ArgumentList? ')' ';' | IxReferenceTail =ï¿½ï¿½Expression ';'ï¿½)
+	 *   |ï¿½ï¿½'if' ( Expression )ï¿½ï¿½Statementï¿½ï¿½('else'ï¿½ï¿½Statement)?ï¿½ï¿½
+	 *   |ï¿½ï¿½'while' ( Expression )ï¿½ï¿½Statementï¿½ï¿½
 	 */
 	private Statement parseStatement() throws SyntaxError {
 		Statement statement=null;
@@ -386,7 +386,7 @@ public class Parser {
 		
 		start(statementPos);
 		switch (token.kind) {
-		case LCURLYBRACKET: //'{' Statement* '}' 
+		case LCURLYBRACKET: //'{' Statement* '}'ï¿½
 			StatementList sl = new StatementList();
 			acceptIt();
 			while(token.kind != TokenKind.RCURLYBRACKET){
@@ -397,7 +397,7 @@ public class Parser {
 			statement = new BlockStmt(sl, statementPos);
 			break;
 			
-		case KW_IF: //'if' ( Expression )  Statement  ('else'  Statement)?  
+		case KW_IF: //'if' ( Expression )ï¿½ï¿½Statementï¿½ï¿½('else'ï¿½ï¿½Statement)?ï¿½ï¿½
 			Expression ifCond;
 			Statement thenStmt;
 			Statement elseStmt=null;
@@ -415,7 +415,7 @@ public class Parser {
 			statement = new IfStmt(ifCond, thenStmt, elseStmt, statementPos);
 			break;
 			
-		case KW_WHILE: // 'while' ( Expression )  Statement  
+		case KW_WHILE: //ï¿½'while' ( Expression )ï¿½ï¿½Statementï¿½ï¿½
 			Expression whileCond;
 			Statement whileBody;
 			
@@ -587,13 +587,13 @@ public class Parser {
 		
 	}
 		
-	/*Expression  ::=   
-	 *   |  Reference ( ( '(' ArgumentList? ')') | IxReferenceTail)
-	 *   |  unop Expression
-	 *   |  Expression binop Expression
-	 *   |  '(' Expression ')'
-	 *   |  num | 'true'  |  'false'
-	 *   |  'new'  ( id '('')' | 'int' '[' Expression ']'  |  id '[' Expression ']' )
+	/*Expressionï¿½ï¿½::=ï¿½ï¿½ï¿½
+	 *   |ï¿½ï¿½Reference ( ( '(' ArgumentList? ')') | IxReferenceTail)
+	 *   |ï¿½ï¿½unop Expression
+	 *   |ï¿½ï¿½Expression binop Expression
+	 *   |ï¿½ï¿½'(' Expression ')'
+	 *   |ï¿½ï¿½num | 'true'ï¿½ï¿½|ï¿½ï¿½'false'
+	 *   |ï¿½ï¿½'new'ï¿½ï¿½( id '('')' | 'int' '[' Expression ']'ï¿½ï¿½|ï¿½ï¿½id '[' Expression ']' )
 	 */
 	private Expression parseExpression() throws SyntaxError { //parse Expression start from binart expression top level
 		Expression exprAST = null;
@@ -757,6 +757,11 @@ public class Parser {
 		
 		start(exprPos);
 		switch (token.kind) {
+		case KW_NULL:
+			termTemp = new NullLiteral(token);
+			exprAST = new LiteralExpr(termTemp,exprPos);
+			acceptIt();
+			break;
 		case NUM:
 			termTemp = new IntLiteral(token);
 			exprAST = new LiteralExpr(termTemp,exprPos);
@@ -772,7 +777,7 @@ public class Parser {
 			exprAST = new LiteralExpr(termTemp,exprPos);
 			acceptIt();
 			break;
-		case KW_NEW: //'new'  ( id '('')' | 'int' '[' Expression ']'  |  id '[' Expression ']' )
+		case KW_NEW: //'new'ï¿½ï¿½( id '('')' | 'int' '[' Expression ']'ï¿½ï¿½|ï¿½ï¿½id '[' Expression ']' )
 			Expression sizeExpr;
 			Type tempType;
 			acceptIt();

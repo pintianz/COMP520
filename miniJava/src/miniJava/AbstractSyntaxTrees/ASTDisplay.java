@@ -155,7 +155,13 @@ public class ASTDisplay implements Visitor<String,Object> {
 	// TYPES
 	//
 	///////////////////////////////////////////////////////////////////////////////
-    
+
+	@Override
+	public Object visitNullType(NullType type, String arg) {
+		show(arg, type.typeKind + " " + type.toString());
+		return null;
+	}
+	
     public Object visitBaseType(BaseType type, String arg){
         show(arg, type.typeKind + " " + type.toString());
         return null;
@@ -350,4 +356,10 @@ public class ASTDisplay implements Visitor<String,Object> {
         show(arg, quote(bool.spelling) + " " + bool.toString());
         return null;
     }
+
+	@Override
+	public Object visitNullLiteral(NullLiteral nl, String arg) {
+		show(arg, quote(nl.spelling) + " " + nl.toString());
+		return null;
+	}
 }

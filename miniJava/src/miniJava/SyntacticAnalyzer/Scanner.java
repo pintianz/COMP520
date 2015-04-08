@@ -316,6 +316,8 @@ public class Scanner{
 				return(TokenKind.KW_BOOLEAN);
 			case "this":
 				return(TokenKind.KW_THIS);
+			case "null":
+				return(TokenKind.KW_NULL);
 		}
 		return null;
 	}

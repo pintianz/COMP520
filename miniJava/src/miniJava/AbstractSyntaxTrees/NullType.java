@@ -7,18 +7,17 @@ package miniJava.AbstractSyntaxTrees;
 
 import miniJava.SyntacticAnalyzer.SourcePosition;
 
-public class BaseType extends Type
+public class NullType extends Type
 {
-    public BaseType(TypeKind t, SourcePosition posn){
+    public NullType(TypeKind t, SourcePosition posn){
         super(t, posn);
     }
     
     public <A,R> R visit(Visitor<A,R> v, A o) {
-        return v.visitBaseType(this, o);
+        return v.visitNullType(this, o);
     }
     @Override
     public boolean equals(Type type){
-    	if(type instanceof NullType) return true;
-    	return super.equals(type);
+    	return true;
     }
 }

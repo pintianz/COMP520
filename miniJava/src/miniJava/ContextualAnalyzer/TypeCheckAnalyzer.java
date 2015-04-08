@@ -26,6 +26,7 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
 	private static Type dummyIntType = new BaseType(TypeKind.INT,dummyPos);
 	private static Type dummyVoidType = new BaseType(TypeKind.VOID,dummyPos);
 	private static Type dummyArrayIntType = new ArrayType(dummyIntType,dummyPos);
+	private static Type dummyNullType = new NullType(TypeKind.NULL,dummyPos);
 	
 	private Type curClass;
 	
@@ -123,6 +124,12 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
 	// TYPES
 	//
 	///////////////////////////////////////////////////////////////////////////////
+    
+    @Override
+	public Type visitNullType(NullType type, String arg) {
+		// TODO Auto-generated method stub
+		return null;
+	}
     
     public Type visitBaseType(BaseType type, String arg){
         return null;
@@ -528,6 +535,11 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
 	//
 	///////////////////////////////////////////////////////////////////////////////
     
+    @Override
+	public Type visitNullLiteral(NullLiteral nl, String arg) {
+		// TODO Auto-generated method stub
+		return dummyNullType;
+	}
     
     //arg is the name of the class if the identifier is a class member
     public Type visitIdentifier(Identifier id, String arg){

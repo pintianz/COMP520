@@ -20,6 +20,7 @@ public class ClassType extends Type
 
     @Override
     public boolean equals(Type type){
+    	if(type instanceof NullType) return true;
     	return (super.equals(type) && className.spelling.equals(((ClassType)type).className.spelling));
     }
     

@@ -21,9 +21,10 @@ public class ArrayType extends Type {
 	    
 	    @Override
 	    public boolean equals(Type type){
+	    	if(type instanceof NullType) return true;
 	    	return (super.equals(type) && eltType.equals(((ArrayType)type).eltType));
 	    }
-
+	    private int length;
 	    public Type eltType;
 	}
 
