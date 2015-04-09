@@ -92,6 +92,7 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
         							IdentificationError("Deplicate main class found at "+c.posn.toString());
         						}
         						mainClassFound = true;
+        						((MethodDecl)potentialMain).isMain = true;
         					}
         				}
         			}
@@ -135,6 +136,9 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
         	idTable.openScope();
         	m.visit(this, "");
         	idTable.closeScope();
+        }
+        if(clas.name.equals("_PrintStream")){
+        	clas.methodDeclList.get(0).isPrintln = true;
         }
         return null;
     }

@@ -2,20 +2,20 @@
 <section name="Workbench">
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
 		<item value="false" key="isRegEx"/>
-		<item value="instanceof" key="selection"/>
+		<item value="Assign" key="selection"/>
 		<item value="false" key="casesensitive"/>
 		<item value="false" key="incremental"/>
 		<item value="true" key="wrap"/>
 		<item value="false" key="wholeword"/>
 		<list key="findhistory">
-			<item value="instanceof"/>
-			<item value="arg"/>
-			<item value="call"/>
-			<item value="is not referenced from a class instance"/>
-			<item value="cannot reference non"/>
-			<item value="instance"/>
-			<item value="System"/>
-			<item value="System.o"/>
+			<item value="assign"/>
+			<item value="variable declaration type mismatch"/>
+			<item value="int size expression"/>
+			<item value="Unable to access class"/>
+			<item value="class next because it is private"/>
+			<item value="cannot reference non-static"/>
+			<item value="vardecl"/>
+			<item value="refexpr"/>
 		</list>
 		<list key="replacehistory">
 			<item value="equals"/>

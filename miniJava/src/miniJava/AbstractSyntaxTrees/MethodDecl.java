@@ -14,6 +14,8 @@ public class MethodDecl extends MemberDecl {
     parameterDeclList = pl;
     statementList = sl;
     returnExp = e;
+    isMain = false;
+    isPrintln = false;
 	}
 	
 	public <A, R> R visit(Visitor<A, R> v, A o) {
@@ -23,4 +25,6 @@ public class MethodDecl extends MemberDecl {
 	public ParameterDeclList parameterDeclList;
 	public StatementList statementList;
 	public Expression returnExp;
+	public boolean isMain;
+	public boolean isPrintln;
 }

@@ -23,8 +23,10 @@ import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
 
+import mJAM.ObjectFile;
 import miniJava.AbstractSyntaxTrees.ASTDisplay;
 import miniJava.AbstractSyntaxTrees.AST;
+import miniJava.CodeGenerator.Encoder;
 import miniJava.ContextualAnalyzer.IdentificationAnalyzer;
 import miniJava.ContextualAnalyzer.TypeCheckAnalyzer;
 import miniJava.SyntacticAnalyzer.Parser;
@@ -75,6 +77,7 @@ public class Compiler {
 		Parser parser = new Parser(scanner, reporter);
 		IdentificationAnalyzer idenAnalyzer = new IdentificationAnalyzer(reporter);
 		TypeCheckAnalyzer typeCheckAnalyzer = new TypeCheckAnalyzer(reporter);
+		Encoder encoder = new Encoder(reporter);
 		
 		//generate Implicit Import AST
 		SourceFile sourceFileII = null;
@@ -115,6 +118,27 @@ public class Compiler {
 		} else {
 			System.out.println(" - Contexual analysis PASSED");
 		}
+		
+		System.out.println("Code Generations ... ");
+		encoder.encodeRun(ast);
+		System.out.println("Code Generations complete:  ");
+		
+		if (reporter.hasErrors()) {
+			System.out.println(" - Code Generations ERROR");
+			System.exit(4);
+		} else {
+			System.out.println(" - Code Generations PASSED");
+		}
+		
+		String objFileName = args[0].substring(0, args[0].lastIndexOf("."));
+		/* write code to object code file */
+		ObjectFile objF = new ObjectFile(objFileName+".mJAM");
+		System.out.print("Writing object code file " + objFileName + " ... ");
+		if (objF.write()) {
+			System.out.println("FAILED!");
+			System.exit(4);
+		}
+		else System.out.println("SUCCEEDED");
 		
 		System.exit(0);
 	}

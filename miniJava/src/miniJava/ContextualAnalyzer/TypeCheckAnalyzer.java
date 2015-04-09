@@ -371,11 +371,9 @@ public class TypeCheckAnalyzer implements Visitor<String,Type> {
         	break;
         case OP_LT:
         	if(!leftType.equals(dummyIntType) || !rightType.equals(dummyIntType)){
-        		System.out.println("THEN");
         		TypeCheckError("Type mismatch at LT binary expression: "+expr.getNamePos());
         		ret = dummyUnsupportedType;
         	} else {
-        		System.out.println("ELSE");
         		ret = dummyBooleanType;
         	}
         	break;
