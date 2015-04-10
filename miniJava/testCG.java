@@ -19,8 +19,22 @@
  */
 class PA4Test
 {
+	static int sv;
+	int nsv;
     public static void main(String[] args)
     {        
+    	PA4Test.sv = 11;
+    	System.out.println(sv);
+    	
+    	A.staticAa = PA4Test.sv+55;
+    	System.out.println(A.staticAa);
+    	
+//    	this.nsv = 12;
+//    	System.out.println(nsv);
+//    	
+    	//sv= A.staticAa + 55;
+    	//staticPrint(sv);
+    	
         /* 1: simple literal */
         int x = 1;
          System.out.println(x);
@@ -68,8 +82,10 @@ class PA4Test
         
 //        /* 9: array creation and length */
 //        int aa_length = 4;
+//        System.out.println(aa_length);
 //        int [] aa = new int [aa_length];
-//	x = aa.length;
+//        System.out.println(aa.length);
+//        x = aa.length;
 //        System.out.println(2*x +1);
 //        
 //        /* 10: array reference and update */
@@ -88,6 +104,10 @@ class PA4Test
 //        /* end of test */
 //        System.out.println(999);
     }
+    public static void staticPrint(int x)
+    {        
+    	System.out.println(x);
+    }
 }
 
 /**********************************************************************
@@ -98,6 +118,7 @@ class A
 {
     int n;
     B b;
+    static int staticAa;
 //    
 //    public void start(){
 //        int x = 11;

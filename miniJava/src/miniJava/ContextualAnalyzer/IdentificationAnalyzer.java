@@ -367,7 +367,9 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     			if(!qr.id.spelling.equals("length")){
         			IdentificationError("Unable to access array member " + qr.id.spelling + " at "+qr.id.posn.toString() + ", only length is accessible");
     			}
-    			qr.id.decl = new FieldDecl(false, false, dummyIntType, "length", dummyPos);
+    			FieldDecl tempfd = new FieldDecl(false, false, dummyIntType, "length", dummyPos);
+    			tempfd.isArrayLength = true;
+    			qr.id.decl=tempfd;
     			return RefContext.ArrayLength;
     		}else{
 		    	switch(surroundingContext){

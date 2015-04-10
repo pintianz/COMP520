@@ -1,107 +1,121 @@
   0         LOADL        0
-  1         CALL         L10
-  2         HALT   (0)   
-  3  L10:   LOADL        1
-  4         LOAD         3[LB]
-  5         CALL         putintnl
-  6         LOADL        2
-  7         LOAD         3[LB]
-  8         CALL         mult    
-  9         LOAD         3[LB]
- 10         CALL         add     
- 11         LOADL        1
- 12         CALL         sub     
- 13         STORE        3[LB]
- 14         LOAD         3[LB]
- 15         CALL         putintnl
- 16         LOADL        3
- 17         CALL         putintnl
+  1         PUSH         1
+  2         PUSH         1
+  3         PUSH         1
+  4         CALL         L10
+  5         POP          3
+  6         HALT   (0)   
+  7  L10:   LOADL        11
+  8         STORE        1[SB]
+  9         LOAD         1[SB]
+ 10         CALL         putintnl
+ 11         LOAD         1[SB]
+ 12         LOADL        55
+ 13         CALL         add     
+ 14         STORE        2[SB]
+ 15         LOAD         2[SB]
+ 16         CALL         putintnl
+ 17         LOADL        1
  18         LOAD         3[LB]
- 19         LOADL        2
- 20         CALL         eq      
- 21         JUMPIF (0)   L11
- 22         LOADL        4
- 23         STORE        3[LB]
- 24         JUMP         L12
- 25  L11:   LOADL        1
- 26         CALL         neg     
+ 19         CALL         putintnl
+ 20         LOADL        2
+ 21         LOAD         3[LB]
+ 22         CALL         mult    
+ 23         LOAD         3[LB]
+ 24         CALL         add     
+ 25         LOADL        1
+ 26         CALL         sub     
  27         STORE        3[LB]
- 28  L12:   LOAD         3[LB]
+ 28         LOAD         3[LB]
  29         CALL         putintnl
- 30         LOADL        0
- 31  L13:   LOAD         4[LB]
- 32         LOADL        5
- 33         CALL         lt      
- 34         JUMPIF (0)   L14
- 35         LOAD         4[LB]
- 36         LOADL        1
- 37         CALL         add     
- 38         STORE        4[LB]
- 39         LOAD         4[LB]
- 40         STORE        3[LB]
- 41         JUMP         L13
- 42  L14:   LOAD         3[LB]
+ 30         LOADL        3
+ 31         CALL         putintnl
+ 32         LOAD         3[LB]
+ 33         LOADL        2
+ 34         CALL         eq      
+ 35         JUMPIF (0)   L11
+ 36         LOADL        4
+ 37         STORE        3[LB]
+ 38         JUMP         L12
+ 39  L11:   LOADL        1
+ 40         CALL         neg     
+ 41         STORE        3[LB]
+ 42  L12:   LOAD         3[LB]
  43         CALL         putintnl
- 44         LOADL        -1
- 45         LOADL        2
- 46         CALL         newobj  
- 47         LOADL        5
- 48         LOAD         5[LB]
- 49         LOADL        0
- 50         CALL         fieldref
+ 44         LOADL        0
+ 45  L13:   LOAD         4[LB]
+ 46         LOADL        5
+ 47         CALL         lt      
+ 48         JUMPIF (0)   L14
+ 49         LOAD         4[LB]
+ 50         LOADL        1
  51         CALL         add     
- 52         STORE        3[LB]
- 53         LOAD         5[LB]
- 54         LOADL        0
- 55         CALL         ne      
- 56         JUMPIF (0)   L15
- 57         LOAD         3[LB]
- 58         LOADL        1
- 59         CALL         add     
- 60         STORE        3[LB]
- 61         JUMP         L15
- 62  L15:   LOAD         3[LB]
- 63         CALL         putintnl
- 64         LOAD         5[LB]
- 65         LOADL        1
- 66         LOADL        -1
- 67         LOADL        2
- 68         CALL         newobj  
- 69         CALL         fieldupd
- 70         LOAD         5[LB]
- 71         LOADL        1
- 72         CALL         fieldref
- 73         LOADL        0
- 74         LOADL        7
- 75         CALL         fieldupd
- 76         LOAD         5[LB]
- 77         LOADL        1
- 78         CALL         fieldref
- 79         LOADL        0
- 80         CALL         fieldref
- 81         STORE        3[LB]
- 82         LOAD         3[LB]
- 83         CALL         putintnl
+ 52         STORE        4[LB]
+ 53         LOAD         4[LB]
+ 54         STORE        3[LB]
+ 55         JUMP         L13
+ 56  L14:   LOAD         3[LB]
+ 57         CALL         putintnl
+ 58         LOADL        -1
+ 59         LOADL        3
+ 60         CALL         newobj  
+ 61         LOADL        5
+ 62         LOAD         5[LB]
+ 63         LOADL        0
+ 64         CALL         fieldref
+ 65         CALL         add     
+ 66         STORE        3[LB]
+ 67         LOAD         5[LB]
+ 68         LOADL        0
+ 69         CALL         ne      
+ 70         JUMPIF (0)   L15
+ 71         LOAD         3[LB]
+ 72         LOADL        1
+ 73         CALL         add     
+ 74         STORE        3[LB]
+ 75         JUMP         L15
+ 76  L15:   LOAD         3[LB]
+ 77         CALL         putintnl
+ 78         LOAD         5[LB]
+ 79         LOADL        1
+ 80         LOADL        -1
+ 81         LOADL        2
+ 82         CALL         newobj  
+ 83         CALL         fieldupd
  84         LOAD         5[LB]
  85         LOADL        1
  86         CALL         fieldref
- 87         LOADL        1
- 88         LOAD         5[LB]
+ 87         LOADL        0
+ 88         LOADL        7
  89         CALL         fieldupd
  90         LOAD         5[LB]
  91         LOADL        1
  92         CALL         fieldref
- 93         LOADL        1
+ 93         LOADL        0
  94         CALL         fieldref
- 95         LOADL        0
+ 95         STORE        3[LB]
  96         LOAD         3[LB]
- 97         LOADL        1
- 98         CALL         add     
- 99         CALL         fieldupd
-100         LOAD         5[LB]
-101         LOADL        0
-102         CALL         fieldref
-103         STORE        3[LB]
-104         LOAD         3[LB]
-105         CALL         putintnl
-106         RETURN (0)   1
+ 97         CALL         putintnl
+ 98         LOAD         5[LB]
+ 99         LOADL        1
+100         CALL         fieldref
+101         LOADL        1
+102         LOAD         5[LB]
+103         CALL         fieldupd
+104         LOAD         5[LB]
+105         LOADL        1
+106         CALL         fieldref
+107         LOADL        1
+108         CALL         fieldref
+109         LOADL        0
+110         LOAD         3[LB]
+111         LOADL        1
+112         CALL         add     
+113         CALL         fieldupd
+114         LOAD         5[LB]
+115         LOADL        0
+116         CALL         fieldref
+117         STORE        3[LB]
+118         LOAD         3[LB]
+119         CALL         putintnl
+120         RETURN (0)   1
