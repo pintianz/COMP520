@@ -26,46 +26,46 @@ class PA4Test
          System.out.println(x);
         
 //        /* 2: simple expression */
-//        x = 2 * x + x - 1;
-//        // System.out.println(x);
+         x = 2 * x + x - 1;
+         System.out.println(x);
 //
 //	/* 3: System.out.println */
-//	System.out.println(3);
+         System.out.println(3);
 //        
 //        /* 4: conditional statement */
-//        if (x == 2)
-//            x = 4;
-//        else
-//            x = -1;
-//        System.out.println(x);
+        if (x == 2)
+            x = 4;
+        else
+            x = -1;
+        System.out.println(x);
 //        
 //        /* 5: repetitive statement */
-//        int i = 0;
-//        while (i < 5) {
-//            i = i + 1;
-//            x = i;
-//        }
-//        System.out.println(x);
+        int i = 0;
+        while (i < 5) {
+            i = i + 1;
+            x = i;
+        }
+        System.out.println(x);
 //        
 //        /* 6: object creation */
-//        A a = new A();
-//        x = 5 + a.n;
-//	if (a != null) 
-//	    x = x + 1;
-//        System.out.println(x);
+        A a = new A();
+        x = 5 + a.n;
+	if (a != null) 
+	    x = x + 1;
+        System.out.println(x);
 //
 //        /* 7: object update */
-//        a.b = new B();
-//        a.b.n = 7;
-//        x = a.b.n;
-//        System.out.println(x);
+        a.b = new B();
+        a.b.n = 7;
+        x = a.b.n;
+        System.out.println(x);
 //        
 //        /* 8: field reference and update */
-//        a.b.a = a;
-//        a.b.a.n = x + 1;
-//        x = a.n;
-//        System.out.println(x);
-//        
+        a.b.a = a;
+        a.b.a.n = x + 1;
+        x = a.n;
+        System.out.println(x);
+        
 //        /* 9: array creation and length */
 //        int aa_length = 4;
 //        int [] aa = new int [aa_length];
@@ -94,10 +94,10 @@ class PA4Test
  *
  *  class A
  */
-//class A
-//{
-//    int n;
-//    B b;
+class A
+{
+    int n;
+    B b;
 //    
 //    public void start(){
 //        int x = 11;
@@ -130,16 +130,16 @@ class PA4Test
 //    public int goo(A a, B bb) {
 //        return (a.n + bb.n + this.n);
 //    }
-//}
+}
 //
 ///**********************************************************************
 // *
 // *  class B
 // */
-//class B
-//{
-//    int n;
-//    A a;
+class B
+{
+    int n;
+    A a;
 //    
 //    public int fact(int nn){
 //        int r = 1;
@@ -147,4 +147,4 @@ class PA4Test
 //            r = nn * fact(nn -1);
 //        return r;
 //    }
-//}
+}

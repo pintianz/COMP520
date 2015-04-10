@@ -2,29 +2,30 @@
 <section name="Workbench">
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog">
 		<item value="false" key="isRegEx"/>
-		<item value="Assign" key="selection"/>
+		<item value="fieldu" key="selection"/>
 		<item value="false" key="casesensitive"/>
 		<item value="false" key="incremental"/>
 		<item value="true" key="wrap"/>
 		<item value="false" key="wholeword"/>
 		<list key="findhistory">
-			<item value="assign"/>
-			<item value="variable declaration type mismatch"/>
-			<item value="int size expression"/>
-			<item value="Unable to access class"/>
-			<item value="class next because it is private"/>
-			<item value="cannot reference non-static"/>
-			<item value="vardecl"/>
-			<item value="refexpr"/>
+			<item value="HALT"/>
+			<item value="fieldu"/>
+			<item value="7)"/>
+			<item value="emit"/>
+			<item value="hal"/>
+			<item value="halt"/>
+			<item value="ha"/>
+			<item value="ObjectAddress"/>
 		</list>
 		<list key="replacehistory">
+			<item value="Integer arg) {"/>
+			<item value="int arg) {"/>
+			<item value="int arg){"/>
 			<item value="equals"/>
 			<item value=".equals(dummyErrorType)"/>
 			<item value=".equals(dummyUnsupportedType)"/>
 			<item value="public Type"/>
 			<item value="Type"/>
-			<item value="&quot;&quot;"/>
-			<item value="id"/>
 		</list>
 	</section>
 	<section name="org.eclipse.ui.texteditor.FindReplaceDialog_dialogBounds">

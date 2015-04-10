@@ -51,6 +51,12 @@ public final class Encoder implements Visitor<Integer, Object> {
 		Machine.emit(Op.CALL,Reg.CB,-1);// call main (invalid addr)
 		Machine.emit(Op.HALT, 0, 0, 0); //end of execution
 		
+		//Decorate fieldDecls
+		for (ClassDecl c: prog.classDeclList){
+        	c.visit(this, 0);
+        }
+		
+		//proper visit of classes
 		for (ClassDecl c: prog.classDeclList){
         	c.visit(this, -99);
         }
@@ -59,22 +65,28 @@ public final class Encoder implements Visitor<Integer, Object> {
 
 	@Override
 	public Object visitClassDecl(ClassDecl clas, Integer arg) {
-        
-        //open level 3 method parameters
-        for (MethodDecl m: clas.methodDeclList){
-        	m.visit(this, -99);
+        if(arg == 0){
+        	for (int i=0; i<clas.fieldDeclList.size(); i++){
+				clas. fieldDeclList.get(i).visit(this, i);
+	        }
+        } else {
+	        for (MethodDecl m: clas.methodDeclList){
+	        	m.visit(this, -99);
+	        }
         }
 		return null;
 	}
 
 	@Override
 	public Object visitFieldDecl(FieldDecl fd, Integer arg) {
-		// TODO Auto-generated method stub
+		fd.runtimeEntity = new KnownAddress(Machine.characterSize, arg);
 		return null;
 	}
 
 	@Override
 	public Object visitMethodDecl(MethodDecl md, Integer arg) {
+		md.runtimeEntity = new KnownAddress(Machine.characterSize, Machine.nextInstrAddr());
+		
 		if(md.isMain){
 			Machine.patch(patchAddr_Call_main, Machine.nextInstrAddr());
 		}
@@ -86,7 +98,7 @@ public final class Encoder implements Visitor<Integer, Object> {
         	pd.visit(this, paramIdx);
         	paramIdx--;
         }
-        frameOffset = 2; //2 slot taken up by frame
+        frameOffset = 3; //2 slot taken up by frame
         StatementList sl = md.statementList;
         for (Statement s: sl) {
             s.visit(this, -99);
@@ -146,8 +158,11 @@ public final class Encoder implements Visitor<Integer, Object> {
 	
 	@Override
 	public Object visitBlockStmt(BlockStmt stmt, Integer arg) {
-		// TODO Auto-generated method stub
-		return null;
+		StatementList sl = stmt.sl;
+        for (Statement s: sl) {
+        	s.visit(this, -99);
+        }
+        return null;
 	}
 
 	@Override
@@ -160,11 +175,17 @@ public final class Encoder implements Visitor<Integer, Object> {
 
 	@Override
 	public Object visitAssignStmt(AssignStmt stmt, Integer arg) {
-//		stmt.ref.visit(this, "");
-//        if(stmt.ref.decl instanceof MethodDecl){
-//        	IdentificationError("Assign to method declaration at" + stmt.getPos());
-//        }
-//        stmt.val.visit(this, "");
+        if(stmt.ref instanceof IdRef){
+        	int displacement = (int)stmt.ref.visit(this, 7);
+            stmt.val.visit(this, 5);
+        	Machine.emit(Op.STORE,Reg.LB,displacement); // store into var
+        } else if(stmt.ref instanceof QualifiedRef){
+        	stmt.ref.visit(this, 7);
+            stmt.val.visit(this, 5);
+        	Machine.emit(Prim.fieldupd); // store into var
+        } else {
+        	CodeGenError("Unreconized assign ref type");
+        }
 		return null;
 	}
 
@@ -173,7 +194,7 @@ public final class Encoder implements Visitor<Integer, Object> {
 		
         ExprList al = stmt.argList;
         for (int i = al.size()-1; i>=0; i--) {
-            al.get(i).visit(this, -99);
+            al.get(i).visit(this, 5);
         }
         stmt.methodRef.visit(this, 5);
 		return null;
@@ -181,21 +202,42 @@ public final class Encoder implements Visitor<Integer, Object> {
 
 	@Override
 	public Object visitIfStmt(IfStmt stmt, Integer arg) {
-		// TODO Auto-generated method stub
+		stmt.cond.visit(this, 5);
+		int patchAddr_If = Machine.nextInstrAddr();// record instr addr where
+		Machine.emit(Op.JUMPIF,0, Reg.CB,-1);// jump else
+		
+		//THEN STMT
+		stmt.thenStmt.visit(this, -99);
+		int patchAddr_Then = Machine.nextInstrAddr();// record instr addr where
+		Machine.emit(Op.JUMP, Reg.CB,-1);// jump end
+		
+		//ELSE STMT
+		int patchAddr_Else = Machine.nextInstrAddr();// record instr addr where
+		Machine.patch(patchAddr_If, patchAddr_Else);
+		if(stmt.elseStmt!=null){
+			stmt.elseStmt.visit(this, -99);
+		}
+		
+		//END IF
+		int patchAddr_End = Machine.nextInstrAddr();// record instr addr where
+		Machine.patch(patchAddr_Then, patchAddr_End);
 		return null;
 	}
 
 	@Override
 	public Object visitWhileStmt(WhileStmt stmt, Integer arg) {
-//		int j = nextInstrAddr;
-//		Machine.emit(Op.JUMP,Reg.CB,j);
-//		emit(Instruction.JUMPop, 0, INSTRUCTION.CBr, 0) // patchme
-//		short g = nextInstrAddr;
-//		com.C.visit(this, arg);
-//		short h = nextInstrAddr;
-//		patch(j, h);
-//		com.E.visit(this, arg);
-//		emit(Instruction.JUMPop, 1, Instruction.CBr, g);
+		int patchAddr_While = Machine.nextInstrAddr();
+		stmt.cond.visit(this, 5);
+		int patchAddr_AfterCondCheck = Machine.nextInstrAddr();// record instr addr where
+		Machine.emit(Op.JUMPIF,0, Reg.CB,-1);// endlook
+		
+		//While body
+		stmt.body.visit(this, -99);
+		Machine.emit(Op.JUMP, Reg.CB,patchAddr_While);// endlook
+		
+		//WhileEnd
+		int patchAddr_End = Machine.nextInstrAddr();// record instr addr where
+		Machine.patch(patchAddr_AfterCondCheck, patchAddr_End);
 		return null;
 	}
 
@@ -205,21 +247,77 @@ public final class Encoder implements Visitor<Integer, Object> {
 	////////////////////////////////////
 	// EXPRESSION
 	///////////////////////////////////
+	
 	@Override
 	public Object visitUnaryExpr(UnaryExpr expr, Integer arg) {
-		// TODO Auto-generated method stub
+		expr.expr.visit(this, 5);
+		switch(expr.operator.kind){
+		case OP_MINUS:
+			Machine.emit(Prim.neg);
+			break;
+		case OP_NEGATE:
+			Machine.emit(Op.LOADL, 99);
+			Machine.emit(Prim.eq);
+			break;
+		default:
+			CodeGenError("Binary expr operator"+expr.operator.spelling+" at "+expr.posn.toString()+" not reconized");
+			break;
+		
+		}
 		return null;
 	}
 
 	@Override
 	public Object visitBinaryExpr(BinaryExpr expr, Integer arg) {
-		// TODO Auto-generated method stub
+		expr.left.visit(this, 5);
+		expr.right.visit(this, 5);
+		switch(expr.operator.kind){
+		case OP_PLUS:
+			Machine.emit(Prim.add);
+			break;
+		case OP_AND:
+			Machine.emit(Prim.and);
+			break;
+		case OP_DIVIDE:
+			Machine.emit(Prim.div);
+			break;
+		case OP_EQ:
+			Machine.emit(Prim.eq);
+			break;
+		case OP_GT:
+			Machine.emit(Prim.gt);
+			break;
+		case OP_GTE:
+			Machine.emit(Prim.ge);
+			break;
+		case OP_LT:
+			Machine.emit(Prim.lt);
+			break;
+		case OP_LTE:
+			Machine.emit(Prim.le);
+			break;
+		case OP_MINUS:
+			Machine.emit(Prim.sub);
+			break;
+		case OP_NEQ:
+			Machine.emit(Prim.ne);
+			break;
+		case OP_OR:
+			Machine.emit(Prim.or);
+			break;
+		case OP_TIMES:
+			Machine.emit(Prim.mult);
+			break;
+		default:
+			CodeGenError("Binary expr operator"+expr.operator.spelling+" at "+expr.posn.toString()+" not reconized");
+			break;
+		}
 		return null;
 	}
 
 	@Override
 	public Object visitRefExpr(RefExpr expr, Integer arg) {
-		// TODO Auto-generated method stub
+		expr.ref.visit(this, arg);
 		return null;
 	}
 
@@ -250,13 +348,14 @@ public final class Encoder implements Visitor<Integer, Object> {
 			break;
 		}
 		Machine.emit(Op.LOADL,val); // load literal
-		frameOffset++;
 		return null;
 	}
 
 	@Override
 	public Object visitNewObjectExpr(NewObjectExpr expr, Integer arg) {
-		// TODO Auto-generated method stub
+		Machine.emit(Op.LOADL,-1); //no class desc, no inhereitance
+		Machine.emit(Op.LOADL, ((ClassDecl)expr.classtype.className.decl).fieldDeclList.size()); // field decl size
+		Machine.emit(Prim.newobj);
 		return null;
 	}
 
@@ -277,7 +376,6 @@ public final class Encoder implements Visitor<Integer, Object> {
 	//arg = 7 - store
 	@Override
 	public Object visitQualifiedRef(QualifiedRef ref, Integer arg) {
-		int offset = arg;
 		if(arg==5){ //fetch
 			//check System.out.println()
 //			if(ref.id.decl.name.equals("println")){
@@ -299,9 +397,18 @@ public final class Encoder implements Visitor<Integer, Object> {
 //			}
 			if(ref.id.decl instanceof MethodDecl && ((MethodDecl)ref.id.decl).isPrintln){
 				Machine.emit(Prim.putintnl);
+			} else {
+				//fetch a.x
+				ref.ref.visit(this, 5);
+				Machine.emit(Op.LOADL, ((KnownAddress)ref.id.decl.runtimeEntity).address.displacement);
+				Machine.emit(Prim.fieldref);
 			}
 			
 		} else if(arg ==7){
+			ref.ref.visit(this, 5);
+			ObjectAddress addr = ((KnownAddress)ref.id.decl.runtimeEntity).address;
+			Machine.emit(Op.LOADL, addr.displacement);
+			return null;
 			
 		} else {
 			CodeGenError("unreconized fetch store arg in qualified ref at" + ref.posn.toString());
@@ -317,7 +424,14 @@ public final class Encoder implements Visitor<Integer, Object> {
 
 	@Override
 	public Object visitIdRef(IdRef ref, Integer arg) {
-		// TODO Auto-generated method stub
+		ObjectAddress addr = ((KnownAddress)ref.id.decl.runtimeEntity).address;
+		if(arg==5){ //fetch
+			Machine.emit(Op.LOAD,Reg.LB,addr.displacement); // load variable
+		} else if(arg ==7){
+			return addr.displacement;
+		} else {
+			CodeGenError("unreconized fetch store arg "+arg+" in id ref "+ref.id.spelling+" at" + ref.posn.toString());
+		}
 		return null;
 	}
 

@@ -10,4 +10,7 @@
 <fullyQualifiedTypeName name="miniJava.ContextualAnalyzer.TypeCheckAnalyzer"/>
 <fullyQualifiedTypeName name="java.net.URL"/>
 <fullyQualifiedTypeName name="java.io.File"/>
+<fullyQualifiedTypeName name="mJAM.ObjectFile"/>
+<fullyQualifiedTypeName name="miniJava.CodeGenerator.Encoder"/>
+<fullyQualifiedTypeName name="mJAM.Machine"/>
 </qualifiedTypeNameHistroy>
