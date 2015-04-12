@@ -1,0 +1,40 @@
+/**************************************************************
+ * miniJava PA4 feature test
+ *
+ *   use this to check contextual analysis and code
+ *   generation for successively more adventurous
+ *   miniJava constructs.
+ *
+ *   uncomment System.out.println(x) statements once
+ *     you have sufficient functionality
+ *   
+ *   When interpreted using mJam the compiled code 
+ *   should print 1 ... 15 999
+ *
+ **************************************************************/
+
+/************
+ *
+ *  mainclass
+ */
+class Pass03 {
+
+	public static void main(String[] args) {
+		Pass03 p3 = new Pass03();
+		ps.f();
+	}
+
+	public void f() {
+		C = 5;
+		System.out.println(C);
+	}
+
+	int C;  // hides class C at member level
+
+}
+
+class C {
+	int x;
+}
+
+

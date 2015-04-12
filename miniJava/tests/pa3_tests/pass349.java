@@ -9,7 +9,6 @@ class MainClass {
 
       int aa_length = 4;
       int [] aa = new int [aa_length];
-
       int i = 0;
 
       i = 1;

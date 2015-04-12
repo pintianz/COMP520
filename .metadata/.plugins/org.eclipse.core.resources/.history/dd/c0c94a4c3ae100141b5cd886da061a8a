@@ -1,0 +1,17 @@
+/*
+ * COMP 520
+ * Identification
+ */
+class A {
+	int x;
+    public static void main(String[] args) {
+    	A a = new A();
+    	a.x = 99;
+    	a.foo(a);
+    }
+
+    public void foo(A A) {
+    	System.out.println(A.x);
+    }  // A may have both definitions in the same scope
+}
+

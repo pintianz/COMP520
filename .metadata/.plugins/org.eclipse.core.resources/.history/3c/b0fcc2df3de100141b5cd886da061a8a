@@ -1,0 +1,28 @@
+/**************************************************************
+ * miniJava PA4 feature test
+ *
+ *   use this to check contextual analysis and code
+ *   generation for successively more adventurous
+ *   miniJava constructs.
+ *
+ *   uncomment System.out.println(x) statements once
+ *     you have sufficient functionality
+ *   
+ *   When interpreted using mJam the compiled code 
+ *   should print 1 ... 15 999
+ *
+ **************************************************************/
+
+/************
+ *
+ *  mainclass
+ */
+class Pass15 { 	
+	public static void main(String[] args) {
+		int x = 3;
+		{ x = 4; System.out.println(x);}
+		{int z = 10; int y = 5; System.out.println(x);}
+	}
+}
+
+

@@ -1,0 +1,40 @@
+/**************************************************************
+ * miniJava PA4 feature test
+ *
+ *   use this to check contextual analysis and code
+ *   generation for successively more adventurous
+ *   miniJava constructs.
+ *
+ *   uncomment System.out.println(x) statements once
+ *     you have sufficient functionality
+ *   
+ *   When interpreted using mJam the compiled code 
+ *   should print 1 ... 15 999
+ *
+ **************************************************************/
+
+/************
+ *
+ *  mainclass
+ */
+class fail21 { 	
+	public static void main(String [] args) {
+		int[] ia = new int[5];
+		ia[3] = 33;
+		F20 f20 = new F20();
+		f20.main(ia);
+	}
+}
+
+class F20 {
+	public void main(int [] args) {
+		int i = 0;
+		while (i < args.length) {
+            System.out.println(args[i]);
+            i = i + 1;
+        }
+	}   // not a main method (not static)
+}
+
+
+

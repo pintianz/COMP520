@@ -1,0 +1,13 @@
+class Pass23 { 	
+    public static void main(String[] args) {
+        Pass23 p = new Pass23();
+        int x = p.p() + p.x;
+        System.out.println(x);
+    }
+    
+    public int x;
+    
+    public int p() {
+        return 3;
+    }
+}

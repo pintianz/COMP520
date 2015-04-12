@@ -201,7 +201,7 @@ public final class Encoder implements Visitor<Integer, Object> {
 	@Override
 	public Object visitVardeclStmt(VarDeclStmt stmt, Integer arg) {
 		stmt.varDecl.visit(this, -99);
-        stmt.initExp.visit(this, -99);
+        stmt.initExp.visit(this, 5);
         frameOffset++;
 		return null;
 	}
@@ -487,7 +487,9 @@ public final class Encoder implements Visitor<Integer, Object> {
 			
 		} else if(arg ==7){
 			//store static A.staticVar = 4
-			if(ref.id.decl instanceof FieldDecl && ((FieldDecl)ref.id.decl).isStatic){
+			if(ref.id.decl instanceof FieldDecl && ((FieldDecl)ref.id.decl).isArrayLength){
+				CodeGenError("Invalid: Cannot asign to length field of array at" + ref.posn.toString());
+			} else if(ref.id.decl instanceof FieldDecl && ((FieldDecl)ref.id.decl).isStatic){
 				ObjectAddress addr = ((KnownAddress)ref.id.decl.runtimeEntity).address;
 				return addr.displacement;
 			} else {
@@ -498,7 +500,7 @@ public final class Encoder implements Visitor<Integer, Object> {
 			}
 			
 		} else {
-			CodeGenError("unreconized fetch store arg in qualified ref at" + ref.posn.toString());
+			CodeGenError("unreconized fetch store arg "+arg+" in qualified ref "+ref.getName() +" at" + ref.posn.toString());
 		}
 		return null;
 	}
