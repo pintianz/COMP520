@@ -155,7 +155,11 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     	
         ParameterDeclList pdl = m.parameterDeclList;
         for (ParameterDecl pd: pdl) {
-        	pd.visit(this, "");
+        	if(m.isStatic){
+        		pd.visit(this, "isStatic");
+        	} else {
+        		pd.visit(this, "");
+        	}
         }
         StatementList sl = m.statementList;
         
@@ -174,6 +178,9 @@ public class IdentificationAnalyzer implements Visitor<String,Object> {
     
     public Object visitParameterDecl(ParameterDecl pd, String arg){
     	//populate level 3 method parameter
+    	if(arg.equals("isStatic")){
+    		pd.isStatic = true;
+    	}
     	idTable.enter(pd.name, pd);
         pd.type.visit(this, "");
         return null;

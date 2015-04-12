@@ -11,10 +11,16 @@ public class ParameterDecl extends LocalDecl {
 	
 	public ParameterDecl(Type t, String name, SourcePosition posn){
 		super(name, t, posn);
+		isStatic = false;
 	}
 	
 	public <A, R> R visit(Visitor<A, R> v, A o) {
         return v.visitParameterDecl(this, o);
     }
+	
+	public boolean checkStatic(){
+		  return isStatic;
+	    }
+	public boolean isStatic;
 }
 

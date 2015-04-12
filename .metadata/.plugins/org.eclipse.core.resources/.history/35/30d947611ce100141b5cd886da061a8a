@@ -1,0 +1,577 @@
+/*
+ * @(#)Encoder.java                        2.0 1999/08/11
+ *
+ * Copyright (C) 1999 D.A. Watt and D.F. Brown
+ * Dept. of Computing Science, University of Glasgow, Glasgow G12 8QQ Scotland
+ * and School of Computer and Math Sciences, The Robert Gordon University,
+ * St. Andrew Street, Aberdeen AB25 1HG, Scotland.
+ * All rights reserved.
+ *
+ * This software is provided free for educational use only. It may
+ * not be used for commercial purposes without the prior written permission
+ * of the authors.
+ */
+
+package miniJava.CodeGenerator;
+
+import miniJava.AbstractSyntaxTrees.*;
+import miniJava.AbstractSyntaxTrees.Package;
+import miniJava.Compiler;
+import miniJava.ErrorReporter;
+import mJAM.Machine;
+import mJAM.Machine.*;
+import mJAM.Instruction;
+
+import java.io.*;
+import java.util.ArrayList;
+
+public final class Encoder implements Visitor<Integer, Object> {
+
+	private ErrorReporter reporter;
+	private int patchAddr_Call_main;
+	private int frameOffset;
+	private ArrayList<Tuple> patchList;
+	
+	public Encoder (ErrorReporter reporter) {
+	    this.reporter = reporter;
+	    Machine.initCodeGen();
+	    frameOffset = 0;
+	    patchList = new ArrayList<Tuple>(); //
+	  }
+
+	  // Generates code to run a program.
+	  // showingTable is true iff entity description details
+	  // are to be displayed.
+	  public final void encodeRun (AST ast) {
+		Machine.initCodeGen();
+	    ast.visit(this, -99);
+	    postEmblePatch();
+	  }
+	  
+	  public void postEmblePatch(){
+		  for(Tuple t: patchList){
+			  Machine.patch(t.addr, ((KnownAddress)t.decl.runtimeEntity).address.displacement);
+		  }
+	  }
+	
+	public Object visitPackage(Package prog, Integer arg) {
+		Machine.emit(Op.LOADL,0); // null pointer (should be empty array ptr)
+		int pushAmt = 0;
+		//load static variable
+		for (ClassDecl c: prog.classDeclList){
+			for (FieldDecl fd: c.fieldDeclList){
+				if(fd.isStatic){
+					Machine.emit(Op.PUSH,1);
+					fd.runtimeEntity = new KnownAddress(Machine.characterSize, pushAmt+1);
+					pushAmt++;
+				}
+	        }
+        }
+		
+		
+		patchAddr_Call_main = Machine.nextInstrAddr();// record instr addr where
+		// "main" is called
+		Machine.emit(Op.CALL,Reg.CB,-1);// call main (invalid addr)
+		
+		Machine.emit(Op.POP,0,0,pushAmt);
+		
+		Machine.emit(Op.HALT, 0, 0, 0); //end of execution
+		
+		//Decorate fieldDecls
+		for (ClassDecl c: prog.classDeclList){
+        	c.visit(this, 0);
+        }
+		
+		//proper visit of classes
+		for (ClassDecl c: prog.classDeclList){
+        	c.visit(this, -99);
+        }
+		return null;
+	}
+
+	@Override
+	public Object visitClassDecl(ClassDecl clas, Integer arg) {
+        if(arg == 0){
+        	for (int i=0; i<clas.fieldDeclList.size(); i++){
+				clas. fieldDeclList.get(i).visit(this, i);
+	        }
+        } else {
+	        for (MethodDecl m: clas.methodDeclList){
+	        	m.visit(this, -99);
+	        }
+        }
+		return null;
+	}
+
+	@Override
+	public Object visitFieldDecl(FieldDecl fd, Integer arg) {
+		if(!fd.isStatic){
+			fd.runtimeEntity = new KnownAddress(Machine.characterSize, arg);
+		}
+		return null;
+	}
+
+	@Override
+	public Object visitMethodDecl(MethodDecl md, Integer arg) {
+		md.runtimeEntity = new KnownAddress(Machine.characterSize, Machine.nextInstrAddr());
+		
+		if(md.isMain){
+			Machine.patch(patchAddr_Call_main, Machine.nextInstrAddr());
+		}
+		
+		ParameterDeclList pdl = md.parameterDeclList;
+		//offset from LB
+		int paramIdx = -1*pdl.size();
+        for (ParameterDecl pd: pdl) {
+        	pd.visit(this, paramIdx);
+        	paramIdx++;
+        }
+        frameOffset = 3; //2 slot taken up by frame
+        StatementList sl = md.statementList;
+        for (Statement s: sl) {
+            s.visit(this, -99);
+        }
+        if (md.returnExp != null) {
+        	md.returnExp.visit(this, -99);
+        } else {
+        	System.out.println("OLIOLI");
+        	if(!md.isPrintln) Machine.emit(Op.RETURN,0,0,md.parameterDeclList.size());// return popping one caller arg
+        			// and returning no value
+        }
+		
+		return null;
+	}
+
+	//arg = string version of offset from LB
+	@Override
+	public Object visitParameterDecl(ParameterDecl pd, Integer arg) {
+		int offsetIdx = arg;
+		pd.runtimeEntity = new KnownAddress(Machine.characterSize, offsetIdx);
+		return null;
+	}
+
+	@Override
+	public Object visitVarDecl(VarDecl vd, Integer arg) {
+		vd.runtimeEntity = new KnownAddress(Machine.characterSize, frameOffset);
+		return null;
+	}
+
+	@Override
+	public Object visitBaseType(BaseType type, Integer arg) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visitClassType(ClassType type, Integer arg) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visitArrayType(ArrayType type, Integer arg) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visitNullType(NullType type, Integer arg) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	//******************
+	// STATEMENTS
+	//******************
+	
+	@Override
+	public Object visitBlockStmt(BlockStmt stmt, Integer arg) {
+		StatementList sl = stmt.sl;
+		int varDeclCnt = 0;
+        for (Statement s: sl) {
+        	if(s instanceof VarDeclStmt){
+        		varDeclCnt++;
+        	}
+        	s.visit(this, -99);
+        }
+        Machine.emit(Op.POP,0,0,varDeclCnt);
+        return null;
+	}
+
+	@Override
+	public Object visitVardeclStmt(VarDeclStmt stmt, Integer arg) {
+		stmt.varDecl.visit(this, -99);
+        stmt.initExp.visit(this, -99);
+        frameOffset++;
+		return null;
+	}
+
+	@Override
+	public Object visitAssignStmt(AssignStmt stmt, Integer arg) {
+        if(stmt.ref instanceof IdRef){
+        	int displacement = (int)stmt.ref.visit(this, 7);
+            stmt.val.visit(this, 5);
+            if(((IdRef)stmt.ref).id.decl instanceof FieldDecl && ((FieldDecl)((IdRef)stmt.ref).id.decl).isStatic){
+            	Machine.emit(Op.STORE,Reg.SB,displacement); // store into var
+            } else {
+            	Machine.emit(Op.STORE,Reg.LB,displacement); // store into var
+            }
+        } else if(stmt.ref instanceof QualifiedRef){
+        	if(((QualifiedRef)stmt.ref).id.decl instanceof FieldDecl && ((FieldDecl)((QualifiedRef)stmt.ref).id.decl).isStatic){
+        		int displacement = (int)stmt.ref.visit(this, 7);
+        		 stmt.val.visit(this, 5);
+        		Machine.emit(Op.STORE,Reg.SB,displacement); // store into var
+        	} else {
+        		stmt.ref.visit(this, 7);
+            	stmt.val.visit(this, 5);
+        		Machine.emit(Prim.fieldupd); // store into var
+        	}
+        } else if(stmt.ref instanceof IndexedRef){
+    		stmt.ref.visit(this, 7);
+        	stmt.val.visit(this, 5);
+    		Machine.emit(Prim.arrayupd); // store into var
+        }else {
+        	CodeGenError("Unreconized assign ref type");
+        }
+		return null;
+	}
+
+	@Override
+	public Object visitCallStmt(CallStmt stmt, Integer arg) {
+		
+        ExprList al = stmt.argList;
+        for (int i = 0; i<al.size(); i++) {
+            al.get(i).visit(this, 5);
+        }
+        
+        //println
+        if(stmt.methodRef instanceof QualifiedRef && ((QualifiedRef)stmt.methodRef).id.decl instanceof MethodDecl && ((MethodDecl)((QualifiedRef)stmt.methodRef).id.decl).isPrintln){
+			Machine.emit(Prim.putintnl);
+        } else if (stmt.methodRef instanceof IdRef){ //idref foo()
+	        patchList.add(new Tuple(Machine.nextInstrAddr(), stmt.methodRef.decl));
+	        Machine.emit(Op.CALL,Reg.CB,-1);
+        } else { //a.foo()
+	        stmt.methodRef.visit(this, 5);
+	        
+	        patchList.add(new Tuple(Machine.nextInstrAddr(), stmt.methodRef.decl));
+	        Machine.emit(Op.CALLI,Reg.CB,-1);
+        }
+		return null;
+	}
+
+	@Override
+	public Object visitIfStmt(IfStmt stmt, Integer arg) {
+		stmt.cond.visit(this, 5);
+		int patchAddr_If = Machine.nextInstrAddr();// record instr addr where
+		Machine.emit(Op.JUMPIF,0, Reg.CB,-1);// jump else
+		
+		//THEN STMT
+		stmt.thenStmt.visit(this, -99);
+		int patchAddr_Then = Machine.nextInstrAddr();// record instr addr where
+		Machine.emit(Op.JUMP, Reg.CB,-1);// jump end
+		
+		//ELSE STMT
+		int patchAddr_Else = Machine.nextInstrAddr();// record instr addr where
+		Machine.patch(patchAddr_If, patchAddr_Else);
+		if(stmt.elseStmt!=null){
+			stmt.elseStmt.visit(this, -99);
+		}
+		
+		//END IF
+		int patchAddr_End = Machine.nextInstrAddr();// record instr addr where
+		Machine.patch(patchAddr_Then, patchAddr_End);
+		return null;
+	}
+
+	@Override
+	public Object visitWhileStmt(WhileStmt stmt, Integer arg) {
+		int patchAddr_While = Machine.nextInstrAddr();
+		stmt.cond.visit(this, 5);
+		int patchAddr_AfterCondCheck = Machine.nextInstrAddr();// record instr addr where
+		Machine.emit(Op.JUMPIF,0, Reg.CB,-1);// endlook
+		
+		//While body
+		stmt.body.visit(this, -99);
+		Machine.emit(Op.JUMP, Reg.CB,patchAddr_While);// endlook
+		
+		//WhileEnd
+		int patchAddr_End = Machine.nextInstrAddr();// record instr addr where
+		Machine.patch(patchAddr_AfterCondCheck, patchAddr_End);
+		return null;
+	}
+
+	
+	
+	
+	////////////////////////////////////
+	// EXPRESSION
+	///////////////////////////////////
+	
+	@Override
+	public Object visitUnaryExpr(UnaryExpr expr, Integer arg) {
+		expr.expr.visit(this, 5);
+		switch(expr.operator.kind){
+		case OP_MINUS:
+			Machine.emit(Prim.neg);
+			break;
+		case OP_NEGATE:
+			Machine.emit(Op.LOADL, 99);
+			Machine.emit(Prim.eq);
+			break;
+		default:
+			CodeGenError("Binary expr operator"+expr.operator.spelling+" at "+expr.posn.toString()+" not reconized");
+			break;
+		
+		}
+		return null;
+	}
+
+	@Override
+	public Object visitBinaryExpr(BinaryExpr expr, Integer arg) {
+		expr.left.visit(this, 5);
+		expr.right.visit(this, 5);
+		switch(expr.operator.kind){
+		case OP_PLUS:
+			Machine.emit(Prim.add);
+			break;
+		case OP_AND:
+			Machine.emit(Prim.and);
+			break;
+		case OP_DIVIDE:
+			Machine.emit(Prim.div);
+			break;
+		case OP_EQ:
+			Machine.emit(Prim.eq);
+			break;
+		case OP_GT:
+			Machine.emit(Prim.gt);
+			break;
+		case OP_GTE:
+			Machine.emit(Prim.ge);
+			break;
+		case OP_LT:
+			Machine.emit(Prim.lt);
+			break;
+		case OP_LTE:
+			Machine.emit(Prim.le);
+			break;
+		case OP_MINUS:
+			Machine.emit(Prim.sub);
+			break;
+		case OP_NEQ:
+			Machine.emit(Prim.ne);
+			break;
+		case OP_OR:
+			Machine.emit(Prim.or);
+			break;
+		case OP_TIMES:
+			Machine.emit(Prim.mult);
+			break;
+		default:
+			CodeGenError("Binary expr operator"+expr.operator.spelling+" at "+expr.posn.toString()+" not reconized");
+			break;
+		}
+		return null;
+	}
+
+	@Override
+	public Object visitRefExpr(RefExpr expr, Integer arg) {
+		expr.ref.visit(this, arg);
+		return null;
+	}
+
+	@Override
+	public Object visitCallExpr(CallExpr expr, Integer arg) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visitLiteralExpr(LiteralExpr expr, Integer arg) {
+		int val = -999;
+		switch(expr.lit.kind){
+		case NUM:
+			val = Integer.parseInt(expr.lit.spelling);
+			break;
+		case KW_TRUE:
+			val = 1;
+			break;
+		case KW_FALSE:
+			val = 0;
+			break;
+		case KW_NULL:
+			val = 0;
+			break;
+		default:
+			CodeGenError("Literal expression"+expr.lit.spelling+" at "+expr.posn.toString()+" not reconizable");
+			break;
+		}
+		Machine.emit(Op.LOADL,val); // load literal
+		return null;
+	}
+
+	@Override
+	public Object visitNewObjectExpr(NewObjectExpr expr, Integer arg) {
+		Machine.emit(Op.LOADL,-1); //no class desc, no inhereitance
+		Machine.emit(Op.LOADL, ((ClassDecl)expr.classtype.className.decl).fieldDeclList.size()); // field decl size
+		Machine.emit(Prim.newobj);
+		return null;
+	}
+
+	@Override
+	public Object visitNewArrayExpr(NewArrayExpr expr, Integer arg) {
+		expr.sizeExpr.visit(this, 5);
+		Machine.emit(Prim.newarr);
+		return null;
+	}
+
+	
+///////////////////////////////////////////////////////////////////////////////
+//
+// REFERNCE
+//
+///////////////////////////////////////////////////////////////////////////////
+	
+	//arg = 5 - fetch
+	//arg = 7 - store
+	@Override
+	public Object visitQualifiedRef(QualifiedRef ref, Integer arg) {
+		if(arg==5){ //fetch
+			if (ref.id.decl instanceof FieldDecl && ((FieldDecl)ref.id.decl).isArrayLength){
+				ref.ref.visit(this, 5);
+				Machine.emit(Op.LOADL, -1);
+				Machine.emit(Prim.add);
+				Machine.emit(Op.LOADI);
+			} else if(ref.id.decl instanceof FieldDecl && ((FieldDecl)ref.id.decl).isStatic){
+				Machine.emit(Op.LOAD, Reg.SB, ((KnownAddress)ref.id.decl.runtimeEntity).address.displacement);
+			}else if(ref.id.decl instanceof FieldDecl){
+				//fetch a.x
+				ref.ref.visit(this, 5);
+				Machine.emit(Op.LOADL, ((KnownAddress)ref.id.decl.runtimeEntity).address.displacement);
+				Machine.emit(Prim.fieldref);
+			} else if(ref.id.decl instanceof MethodDecl){ //methodDecl a.method()
+				ref.ref.visit(this, 5);
+			} else {
+				CodeGenError("unreconized fetch type in qualified ref at" + ref.posn.toString());
+			}
+			
+		} else if(arg ==7){
+			//store static A.staticVar = 4
+			if(ref.id.decl instanceof FieldDecl && ((FieldDecl)ref.id.decl).isStatic){
+				ObjectAddress addr = ((KnownAddress)ref.id.decl.runtimeEntity).address;
+				return addr.displacement;
+			} else {
+				//store nonstatic a.var = 4
+				ref.ref.visit(this, 5);
+				ObjectAddress addr = ((KnownAddress)ref.id.decl.runtimeEntity).address;
+				Machine.emit(Op.LOADL, addr.displacement);
+			}
+			
+		} else {
+			CodeGenError("unreconized fetch store arg in qualified ref at" + ref.posn.toString());
+		}
+		return null;
+	}
+
+	@Override
+	public Object visitIndexedRef(IndexedRef ref, Integer arg) {
+		ObjectAddress addr = ((KnownAddress)ref.ref.decl.runtimeEntity).address;
+		if(arg==5){ //fetch
+			ref.ref.visit(this, 5);
+			ref.indexExpr.visit(this, 5);
+			Machine.emit(Prim.arrayref);
+		} else if(arg ==7){
+			ref.ref.visit(this, 5);
+			ref.indexExpr.visit(this, 5);
+		} else {
+			CodeGenError("unreconized fetch store arg "+arg+" in array ref "+ref.ref.getNamePos());
+		}
+		return null;
+	}
+
+	@Override
+	public Object visitIdRef(IdRef ref, Integer arg) {
+		ObjectAddress addr = ((KnownAddress)ref.id.decl.runtimeEntity).address;
+		if(arg==5){ //fetch
+			if(ref.id.decl instanceof FieldDecl && ((FieldDecl)ref.id.decl).isStatic){
+				Machine.emit(Op.LOAD,Reg.SB,addr.displacement); // load variable
+			} else if(ref.id.decl instanceof FieldDecl){
+				Machine.emit(Op.LOAD,Reg.OB,addr.displacement); // load variable
+			} else {
+				Machine.emit(Op.LOAD,Reg.LB,addr.displacement); // load variable
+			}
+		} else if(arg ==7){
+//			if(ref.id.decl instanceof FieldDecl && ((FieldDecl)ref.id.decl).isStatic){
+//				return addr.displacement+3;
+//			} else {
+//				return addr.displacement;
+//			}
+			return addr.displacement;
+		} else {
+			CodeGenError("unreconized fetch store arg "+arg+" in id ref "+ref.id.spelling+" at" + ref.posn.toString());
+		}
+		return null;
+	}
+
+	@Override
+	public Object visitThisRef(ThisRef ref, Integer arg) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	
+	
+	
+	@Override
+	public Object visitIdentifier(Identifier id, Integer arg) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visitOperator(Operator op, Integer arg) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visitIntLiteral(IntLiteral num, Integer arg) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visitBooleanLiteral(BooleanLiteral bool, Integer arg) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Object visitNullLiteral(NullLiteral nl, Integer arg) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	
+	
+	
+	///////////////////////////////////////////////////////////////////////////////
+	//
+	// DISPLAY ERROR
+	//
+	///////////////////////////////////////////////////////////////////////////////
+	
+	private void CodeGenError(String e) {
+		reporter.reportError("***Code generation error: " + e);
+	}
+
+
+}
+ class Tuple { 
+	  public final int addr; 
+	  public final Declaration decl; 
+	  public Tuple(int addr, Declaration decl) { 
+	    this.addr = addr; 
+	    this.decl = decl; 
+	  } 
+	} 

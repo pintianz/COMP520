@@ -11,6 +11,8 @@
 <fullyQualifiedTypeName name="java.net.URL"/>
 <fullyQualifiedTypeName name="java.io.File"/>
 <fullyQualifiedTypeName name="mJAM.ObjectFile"/>
+<fullyQualifiedTypeName name="mJAM.Machine.Op"/>
 <fullyQualifiedTypeName name="miniJava.CodeGenerator.Encoder"/>
+<fullyQualifiedTypeName name="java.util.ArrayList"/>
 <fullyQualifiedTypeName name="mJAM.Machine"/>
 </qualifiedTypeNameHistroy>

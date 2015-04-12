@@ -23,17 +23,21 @@ class PA4Test
 	int nsv;
     public static void main(String[] args)
     {        
+    	//11
     	PA4Test.sv = 11;
     	System.out.println(sv);
     	
+    	//66
     	A.staticAa = PA4Test.sv+55;
     	System.out.println(A.staticAa);
     	
+    	//12
 //    	this.nsv = 12;
 //    	System.out.println(nsv);
-//    	
-    	//sv= A.staticAa + 55;
-    	//staticPrint(sv);
+    	
+    	//
+    	this.sv= A.staticAa + 55;
+    	staticPrint(sv);
     	
         /* 1: simple literal */
         int x = 1;
@@ -81,28 +85,30 @@ class PA4Test
         System.out.println(x);
         
 //        /* 9: array creation and length */
-//        int aa_length = 4;
-//        System.out.println(aa_length);
-//        int [] aa = new int [aa_length];
-//        System.out.println(aa.length);
-//        x = aa.length;
-//        System.out.println(2*x +1);
+        int aa_length = 4;
+        //System.out.println(aa_length);
+        int [] aa = new int [aa_length];
+        //System.out.println(aa.length);
+        x = aa.length;
+        System.out.println(2*x +1);
 //        
 //        /* 10: array reference and update */
-//        aa[0] = 0;
-//	i = 1;
-//        while (i < aa_length) {
-//            aa[i] = aa[i-1] + i;
-//            i = i + 1;
-//        }
-//        x = aa[3] + 4;
-//        System.out.println(x);
+        aa[0] = 0;
+        i = 1;
+        while (i < aa_length) {
+            aa[i] = aa[i-1] + i;
+            i = i + 1;
+        }
+        x = aa[3] + 4;
+        System.out.println(x);
 //        
 //        /* 11: simple method invocation */
-//        a.start();
+          a.startStatic(1,2,3);
+          staticPrint(1111);
+          a.start();
 //        
 //        /* end of test */
-//        System.out.println(999);
+        System.out.println(999);
     }
     public static void staticPrint(int x)
     {        
@@ -119,38 +125,42 @@ class A
     int n;
     B b;
     static int staticAa;
+    public void startStatic(int a, int b, int c){
+	  int x = 11;
+	  System.out.println(c); 
+	  }
 //    
-//    public void start(){
-//        int x = 11;
-//        System.out.println(x);
+    public void start(){
+        int x = 11;
+        System.out.println(x);
 //        
 //        /* 12: field ref */
-//        n = 12;
-//        x = b.a.n;
-//        System.out.println(x);
+        n = 12;
+        x = b.a.n;
+        System.out.println(x);
 //        
 //        /* 13: complex method invocation */
-//        n = 4;
-//        x = 2 + foo(3,4);
-//        System.out.println(x);
+        n = 4;
+        x = 2 + foo(3,4);
+        System.out.println(x);
 //        
 //        /* 14: recursion */
-//        System.out.println(8 + b.fact(3));
+        System.out.println(8 + b.fact(3));
 //        
 //        /* 15: object-values */
-//        this.n = 4;
-//        b.n = 5;
-//        System.out.println(2 + this.goo(this,this.b));
+        this.n = 4;
+        b.n = 5;
+        System.out.println(2 + this.goo(this,this.b));
 //        
-//    }
+    }
 //    
-//    public int foo(int x, int y) {
-//        return (n + x + y);
-//    }
+    public int foo(int x, int y) {
+        return (n + x + y);
+    }
 //    
-//    public int goo(A a, B bb) {
-//        return (a.n + bb.n + this.n);
-//    }
+    public int goo(A a, B bb) {
+        return (a.n + bb.n + this.n);
+    }
 }
 //
 ///**********************************************************************
@@ -162,10 +172,10 @@ class B
     int n;
     A a;
 //    
-//    public int fact(int nn){
-//        int r = 1;
-//        if (nn > 1)
-//            r = nn * fact(nn -1);
-//        return r;
-//    }
+    public int fact(int nn){
+        int r = 1;
+        if (nn > 1)
+            r = nn * fact(nn -1);
+        return r;
+    }
 }
