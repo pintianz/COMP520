@@ -46,7 +46,6 @@ public final class Encoder implements Visitor<Integer, Object> {
 	    postEmblePatch();
 	  }
 	  
-	  //patch method calls
 	  public void postEmblePatch(){
 		  for(Tuple t: patchList){
 			  Machine.patch(t.addr, ((KnownAddress)t.decl.runtimeEntity).address.displacement);
@@ -56,7 +55,6 @@ public final class Encoder implements Visitor<Integer, Object> {
 	public Object visitPackage(Package prog, Integer arg) {
 		Machine.emit(Op.LOADL,0); // null pointer (should be empty array ptr)
 		int pushAmt = 0;
-		
 		//load static variable
 		for (ClassDecl c: prog.classDeclList){
 			for (FieldDecl fd: c.fieldDeclList){
@@ -71,7 +69,7 @@ public final class Encoder implements Visitor<Integer, Object> {
 		
 		patchAddr_Call_main = Machine.nextInstrAddr();// record instr addr where
 		// "main" is called
-		Machine.emit(Op.CALL,Reg.CB,-1);// call main (stub addr)
+		Machine.emit(Op.CALL,Reg.CB,-1);// call main (invalid addr)
 		
 		Machine.emit(Op.POP,0,0,pushAmt);
 		
@@ -531,6 +529,11 @@ public final class Encoder implements Visitor<Integer, Object> {
 				Machine.emit(Op.LOAD,Reg.LB,addr.displacement); // load variable
 			}
 		} else if(arg ==7){
+//			if(ref.id.decl instanceof FieldDecl && ((FieldDecl)ref.id.decl).isStatic){
+//				return addr.displacement+3;
+//			} else {
+//				return addr.displacement;
+//			}
 			return addr.displacement;
 		} else {
 			CodeGenError("unreconized fetch store arg "+arg+" in id ref "+ref.id.spelling+" at" + ref.posn.toString());

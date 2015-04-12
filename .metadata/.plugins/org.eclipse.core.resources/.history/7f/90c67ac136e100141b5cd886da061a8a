@@ -531,6 +531,11 @@ public final class Encoder implements Visitor<Integer, Object> {
 				Machine.emit(Op.LOAD,Reg.LB,addr.displacement); // load variable
 			}
 		} else if(arg ==7){
+//			if(ref.id.decl instanceof FieldDecl && ((FieldDecl)ref.id.decl).isStatic){
+//				return addr.displacement+3;
+//			} else {
+//				return addr.displacement;
+//			}
 			return addr.displacement;
 		} else {
 			CodeGenError("unreconized fetch store arg "+arg+" in id ref "+ref.id.spelling+" at" + ref.posn.toString());

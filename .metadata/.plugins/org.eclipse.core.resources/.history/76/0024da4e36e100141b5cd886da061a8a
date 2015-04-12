@@ -39,14 +39,15 @@ public final class Encoder implements Visitor<Integer, Object> {
 	    patchList = new ArrayList<Tuple>(); //
 	  }
 
-	  // Run encoder
+	  // Generates code to run a program.
+	  // showingTable is true iff entity description details
+	  // are to be displayed.
 	  public final void encodeRun (AST ast) {
 		Machine.initCodeGen();
 	    ast.visit(this, -99);
 	    postEmblePatch();
 	  }
 	  
-	  //patch method calls
 	  public void postEmblePatch(){
 		  for(Tuple t: patchList){
 			  Machine.patch(t.addr, ((KnownAddress)t.decl.runtimeEntity).address.displacement);
@@ -56,7 +57,6 @@ public final class Encoder implements Visitor<Integer, Object> {
 	public Object visitPackage(Package prog, Integer arg) {
 		Machine.emit(Op.LOADL,0); // null pointer (should be empty array ptr)
 		int pushAmt = 0;
-		
 		//load static variable
 		for (ClassDecl c: prog.classDeclList){
 			for (FieldDecl fd: c.fieldDeclList){
@@ -71,7 +71,7 @@ public final class Encoder implements Visitor<Integer, Object> {
 		
 		patchAddr_Call_main = Machine.nextInstrAddr();// record instr addr where
 		// "main" is called
-		Machine.emit(Op.CALL,Reg.CB,-1);// call main (stub addr)
+		Machine.emit(Op.CALL,Reg.CB,-1);// call main (invalid addr)
 		
 		Machine.emit(Op.POP,0,0,pushAmt);
 		
@@ -135,6 +135,7 @@ public final class Encoder implements Visitor<Integer, Object> {
         	md.returnExp.visit(this, 5);
         	if(!md.isPrintln) Machine.emit(Op.RETURN,1,0,md.parameterDeclList.size());// return popping one caller arg
         } else {
+        	System.out.println("OLIOLI");
         	if(!md.isPrintln) Machine.emit(Op.RETURN,0,0,md.parameterDeclList.size());// return popping one caller arg
         			// and returning no value
         }
@@ -531,6 +532,11 @@ public final class Encoder implements Visitor<Integer, Object> {
 				Machine.emit(Op.LOAD,Reg.LB,addr.displacement); // load variable
 			}
 		} else if(arg ==7){
+//			if(ref.id.decl instanceof FieldDecl && ((FieldDecl)ref.id.decl).isStatic){
+//				return addr.displacement+3;
+//			} else {
+//				return addr.displacement;
+//			}
 			return addr.displacement;
 		} else {
 			CodeGenError("unreconized fetch store arg "+arg+" in id ref "+ref.id.spelling+" at" + ref.posn.toString());

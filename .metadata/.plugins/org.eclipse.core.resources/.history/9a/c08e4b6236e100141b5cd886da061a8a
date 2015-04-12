@@ -118,7 +118,6 @@ public class Compiler {
 		} else {
 			System.out.println(" - Contexual analysis PASSED");
 		}
-		System.out.println("");
 		
 		System.out.println("Code Generations ... ");
 		encoder.encodeRun(ast);
@@ -130,7 +129,6 @@ public class Compiler {
 		} else {
 			System.out.println(" - Code Generations PASSED");
 		}
-		System.out.println("");
 		
 		String objFileName = args[0].substring(0, args[0].lastIndexOf("."));
 		/* write code to object code file */
