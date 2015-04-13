@@ -442,8 +442,8 @@ public class Parser {
 			
 			accept(TokenKind.OP_EQUAL);
 			initExpBool = parseExpression();
-			accept(TokenKind.SEMICOLON);
 			finish(statementPos);
+			accept(TokenKind.SEMICOLON);
 			statement = new VarDeclStmt(varDeclBool, initExpBool, statementPos);
 			
 			break;
@@ -460,8 +460,8 @@ public class Parser {
 			finish(verDeclIntPos);
 			accept(TokenKind.OP_EQUAL);
 			initExpInt = parseExpression();
-			accept(TokenKind.SEMICOLON);
 			finish(statementPos);
+			accept(TokenKind.SEMICOLON);
 			statement = new VarDeclStmt(varDeclInt, initExpInt, statementPos);
 			break;
 			
@@ -483,14 +483,14 @@ public class Parser {
 					callListThis = parseArgumentList();
 				}
 				accept(TokenKind.RPAREN);
-				accept(TokenKind.SEMICOLON);
 				finish(statementPos);
+				accept(TokenKind.SEMICOLON);
 				statement = new CallStmt(refThis, callListThis, statementPos);
 			} else { 
 				accept(TokenKind.OP_EQUAL);
 				assignExpThis = parseExpression();
-				accept(TokenKind.SEMICOLON);
 				finish(statementPos);
+				accept(TokenKind.SEMICOLON);
 				statement = new AssignStmt(refThis, assignExpThis, statementPos);
 			}
 			break;
@@ -513,8 +513,8 @@ public class Parser {
 				
 				accept(TokenKind.OP_EQUAL);
 				initExpId = parseExpression();
-				accept(TokenKind.SEMICOLON);
 				finish(statementPos);
+				accept(TokenKind.SEMICOLON);
 				statement = new VarDeclStmt(varDeclId, initExpId, statementPos);
 				
 			} else if(token.kind == TokenKind.LSQRBRACKET){
@@ -527,8 +527,8 @@ public class Parser {
 					finish(verDeclIdPos);
 					accept(TokenKind.OP_EQUAL);
 					initExpId = parseExpression();
-					accept(TokenKind.SEMICOLON);
 					finish(statementPos);
+					accept(TokenKind.SEMICOLON);
 					statement = new VarDeclStmt(varDeclId, initExpId, statementPos);
 					
 				} else { // ID[Expression] = expression | (argList?)

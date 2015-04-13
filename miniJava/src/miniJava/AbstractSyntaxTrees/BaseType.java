@@ -18,7 +18,7 @@ public class BaseType extends Type
     }
     @Override
     public boolean equals(Type type){
-    	if(type instanceof NullType) return true;
+    	if(type instanceof NullType) return false;
     	return super.equals(type);
     }
 }
