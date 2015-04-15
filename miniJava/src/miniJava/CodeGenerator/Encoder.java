@@ -16,6 +16,7 @@ package miniJava.CodeGenerator;
 
 import miniJava.AbstractSyntaxTrees.*;
 import miniJava.AbstractSyntaxTrees.Package;
+import miniJava.SyntacticAnalyzer.TokenKind;
 import miniJava.Compiler;
 import miniJava.ErrorReporter;
 import mJAM.Machine;
@@ -323,7 +324,7 @@ public final class Encoder implements Visitor<Integer, Object> {
 			Machine.emit(Prim.neg);
 			break;
 		case OP_NEGATE:
-			Machine.emit(Op.LOADL, 99);
+			Machine.emit(Op.LOADL, 0);
 			Machine.emit(Prim.eq);
 			break;
 		default:
@@ -336,48 +337,88 @@ public final class Encoder implements Visitor<Integer, Object> {
 
 	@Override
 	public Object visitBinaryExpr(BinaryExpr expr, Integer arg) {
-		expr.left.visit(this, 5);
-		expr.right.visit(this, 5);
-		switch(expr.operator.kind){
-		case OP_PLUS:
-			Machine.emit(Prim.add);
-			break;
-		case OP_AND:
+		if(expr.operator.kind == TokenKind.OP_AND){
+			expr.left.visit(this, 5);
+			
+			int patchAddr_AndSC = Machine.nextInstrAddr();// record instr addr where
+			Machine.emit(Op.JUMPIF,0, Reg.CB,-1);// jump if short circuit
+			
+			Machine.emit(Op.LOADL, 1);
+			expr.right.visit(this, 5);
 			Machine.emit(Prim.and);
-			break;
-		case OP_DIVIDE:
-			Machine.emit(Prim.div);
-			break;
-		case OP_EQ:
-			Machine.emit(Prim.eq);
-			break;
-		case OP_GT:
-			Machine.emit(Prim.gt);
-			break;
-		case OP_GTE:
-			Machine.emit(Prim.ge);
-			break;
-		case OP_LT:
-			Machine.emit(Prim.lt);
-			break;
-		case OP_LTE:
-			Machine.emit(Prim.le);
-			break;
-		case OP_MINUS:
-			Machine.emit(Prim.sub);
-			break;
-		case OP_NEQ:
-			Machine.emit(Prim.ne);
-			break;
-		case OP_OR:
+			int patchAddr_AndEnd = Machine.nextInstrAddr();// record instr addr where
+			Machine.emit(Op.JUMP, Reg.CB,-1);
+			
+			//and Short circuit
+			Machine.patch(patchAddr_AndSC, Machine.nextInstrAddr());
+			Machine.emit(Op.LOADL, 0);
+			
+			//and end
+			Machine.patch(patchAddr_AndEnd, Machine.nextInstrAddr());
+			return null;
+		} else if(expr.operator.kind == TokenKind.OP_OR){
+			expr.left.visit(this, 5);
+			
+			int patchAddr_OrSC = Machine.nextInstrAddr();// record instr addr where
+			Machine.emit(Op.JUMPIF,1, Reg.CB,-1);// jump if short circuit
+			
+			Machine.emit(Op.LOADL, 0);
+			expr.right.visit(this, 5);
 			Machine.emit(Prim.or);
-			break;
-		case OP_TIMES:
-			Machine.emit(Prim.mult);
-			break;
-		default:
-			CodeGenError("Binary expr operator"+expr.operator.spelling+" at "+expr.posn.toString()+" not reconized");
-			break;
+			int patchAddr_OrEnd = Machine.nextInstrAddr();// record instr addr where
+			Machine.emit(Op.JUMP, Reg.CB,-1);
+			
+			//and Short circuit
+			Machine.patch(patchAddr_OrSC, Machine.nextInstrAddr());
+			Machine.emit(Op.LOADL, 1);
+			
+			//and end
+			Machine.patch(patchAddr_OrEnd, Machine.nextInstrAddr());
+			return null;
+		}else {
+			expr.left.visit(this, 5);
+			expr.right.visit(this, 5);
+			switch(expr.operator.kind){
+			case OP_PLUS:
+				Machine.emit(Prim.add);
+				break;
+			case OP_AND:
+				Machine.emit(Prim.and);
+				break;
+			case OP_DIVIDE:
+				Machine.emit(Prim.div);
+				break;
+			case OP_EQ:
+				Machine.emit(Prim.eq);
+				break;
+			case OP_GT:
+				Machine.emit(Prim.gt);
+				break;
+			case OP_GTE:
+				Machine.emit(Prim.ge);
+				break;
+			case OP_LT:
+				Machine.emit(Prim.lt);
+				break;
+			case OP_LTE:
+				Machine.emit(Prim.le);
+				break;
+			case OP_MINUS:
+				Machine.emit(Prim.sub);
+				break;
+			case OP_NEQ:
+				Machine.emit(Prim.ne);
+				break;
+			case OP_OR:
+				Machine.emit(Prim.or);
+				break;
+			case OP_TIMES:
+				Machine.emit(Prim.mult);
+				break;
+			default:
+				CodeGenError("Binary expr operator"+expr.operator.spelling+" at "+expr.posn.toString()+" not reconized");
+				break;
+			}
 		}
 		return null;
 	}

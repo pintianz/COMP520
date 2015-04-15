@@ -1,0 +1,13 @@
+/**
+ * COMP 520
+ * Instance values
+ */
+class MainClass {
+    public static void main (String [] args) {
+        int[] c = null;
+        if(c == null){
+        	System.out.println(15);
+        }
+        
+    }
+}
